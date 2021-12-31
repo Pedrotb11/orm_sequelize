@@ -1,155 +1,87 @@
+//Por enquanto, nosso projeto está dessa forma: criamos o nosso primeiro modelo, “Pessoas”.
 
-// para criar a tabela pessoas com suas colunas e atributos, eu rodei: "npx sequelize-cli model:create --name Pessoas --attributes nome:string,ativo:boolean,email:string,role:string", daí ele já criou os arquivos necessários, e criou um id tbm.
+// Mas, o modelo “Pessoas” não está conectado ainda ao resto da aplicação. Está conectado ao banco, sim, mas a parte da aplicação que a testamos no Postman está toda aqui: nosso usuário está fazendo uma requisição para /teste; na parte da aplicação, onde está definida a rota-teste, já está inclusive resolvendo essa rota-teste, devolvendo um pequeno objeto com uma mensagem de boas-vindas; que o usuário está vendo no Postman, no formato .json.
 
-// se eu quiser mudar de database e usar por ex. um Postgrees, ou algo do tipo, é só trocar as configurações lá no config.json. Tbm  se eu quiser usar outro banco para a fase de test ou mudar o root, o password, é só trocar as configurações no config.json, e o Sequelize vai se encarregar de fazer a tradução de qualquer um dos SQLs do banco para a sintaxe do JS.
+// Como fazemos, então, para ligar o modelo ao restante da aplicação? O modelo é uma parte muito importante do sistema. É nele que estão as regras de negócio, ele que se conecta com o banco, então não é bom deixarmos a parte de modelo acessível para toda a aplicação, para ficar mexendo livremente nessa parte.
 
-//            O uUE SÃO MIGRAÇÕES?
+// Então, veja que o “modelo” do MVC nós já temos, e a “vista” também. Falta o C, que é o controlador, “Controller” que entra justamente entre o modelo e as rotas/vista, para fazer esse intermédio, esse meio de campo, entre o modelo, que não queremos que seja muito acessível, digamos assim, e o restante da aplicação.
 
-// Antes de continuarmos, vamos então só trocar duas palavras sobre migração. Vocês me viram falar sobre migração, rodamos um comando de criar modelos e criou junto com a migração, eu fiquei mostrando o arquivo, mas o que é migração, migrations? Quando falamos de migração em DQL, podemos falar de duas coisas.
+// Suponha que queremos acessar o modelo Pessoas e que nosso usuário veja um .json com todas as pessoas que estão cadastradas. Através de uma requisição HTTP, que nosso usuário faz, ele pode fazer uma requisição, por exemplo, para uma rota /pessoas. Essa rota aqui fala: bom, é uma rota /pessoas, então eu vou chamar o controlador de Pessoas.
 
-// A primeira coisa é que, normalmente, vocês vão ver se vocês buscarem SQL migração, SQL migration, é a migração de dados mesmo. É quando mudamos, transferimos nossos dados de uma plataforma para outra. Mudou o banco de dados, mudou o serviço. Normalmente, os bancos de dados são umas entidades complexas, dependendo ainda da empresa que você trabalha, do projeto, esse banco pode ser bem grande. Migrar, transportar esses dados pode ser complicado, uma operação delicada.
+// Cada modelo da nossa aplicação tem o seu próprio controlador, e escreveremos tudo isso aos poucos para entendermos o que está acontecendo. O controlador, a parte “Modelo e Controlador”, inclusive, do diagrama, fica separada do resto. Só o controlador que está passando dados para o modelo, e informa, modelo, estou precisando receber todos os dados de pessoas.
 
-// Então, existem vários processos para isso, e várias empresas, consultoria, softwares, que ajudam. Essa é a migração de dados normal, quando você transfere seus dados de um lugar para outro.
+// O modelo vai enviar esses dados para o controlador de volta; o controlador vai resolver e passar para camada de “vista”, view, que vai gerar o .json, que nosso usuário vai receber no Postman.
 
-// Quando estamos falando nesse projeto, estamos falando de migração que fazemos com ORM. Essa migração, embora tenha o mesmo nome, quando falamos aqui no curso de migração, falamos de alterações que fazemos no banco. Por exemplo, criei uma tabela, por exemplo, que tem nome, telefone, endereço, ou, na nossa escola de inglês, tem nome, se a pessoa está ativa, se tem o papel de estudante ou de aluno. Criei essa tabela “pessoas” e eu tenho que fazer alterações nela.
+// “Usuário”, eu coloquei usuário final/front, e coloquei HTML/JSON, porque normalmente, quando vemos esses diagramas, a parte de usuário pode se referir tanto a um quanto ao outro. Pode se referir tanto ao usuário final, que vai receber um HTML ou algo na tela dele; quanto ao front-end, que vai receber os dados no formato .json, normalmente, e vai usar esses dados na parte da frente da aplicação.
 
-// Normalmente, essas alterações impactam nosso sistema, no produto inteiro, na regra de negócios. Então, quando falamos de migração em ORM, falamos de como alteramos as tabelas, nossas entidades relacionais, de uma forma que elas possam ser rastreáveis, e se acontecer alguma coisa, podemos voltar.
+// Até aqui, o Sequelize fez bastante coisa, mas essa parte de controlador não tem comando. Ele não fez, então temos que fazer direto no código. Vou acessar “api> nova pasta” e chamar essa nova pasta de “controllers”, que é o nome padrão. Dentro de “controllers”, vou criar um arquivo que chama “PessoaController.js”. O “p” de Pessoa está em maiúsculo não é por acaso, é porque PessoaController será uma classe.
 
-// Quem trabalha com versionamento de código, por exemplo, usando o Git, sabe que, ao mandar um código para o GitHub, ou para o BitBucket, um commit, se eu quero ou preciso voltar alguma coisa, sempre se pode voltar o código para o estado anterior, e a migração com ORM trata justamente disso, de voltar o estado da nossa tabela a um estado anterior, se precisar. É uma segurança para você rastrear as alterações feitas no banco. Mesmo se você tem uma equipe e várias pessoas mexendo no mesmo projeto, isso pode ser interessante.
 
-// Então, quando falamos de mudanças no esquema de dados, precisamos tanto coordenar alterações feitas por diferentes pessoas de um time; ou seja, eu estou trabalhando no mesmo projeto que você e estamos fazendo alterações nas tabelas. Podemos estar fazendo ao mesmo tempo, pode acontecer. Como rastreamos alterações que foram feitas, quando elas foram feitas, que alteração sobrescreveu a outra? Podemos ver isso usando arquivos de migração, usando a migração na ORM.
+//                          INTERESSANTE!!:
 
-// E também, se você precisa debugar algum erro, debugar algum problema. De repente, quebrou em produção nosso banco porque alguém subiu uma alteração na tabela que causou impacto aí no restante do sistema. Como eu debugo? Você pode fazer isso através das migrações também.
 
-// Do mesmo modo que o Git, por exemplo, tem um arquivo dentro da pasta oculta .git que “ouve” o que está acontecendo dentro do seu diretório, também temos um arquivo, não vamos mexer nele, mas vai vê-lo no banco, que é o arquivo que guarda as alterações, as migrações feitas no nosso banco de dados, para podermos voltar quando precisa.
+//  Então, vamos criar a classe PessoaController, abre e fecha chaves, classe não recebe parâmetro, então não vamos precisar da função Construtora. O que a precisaremos é, dentro da classe, criar os métodos que usaremos. Como que eu sei quais são esses métodos? O que estou fazendo? Vamos dar uma relembrada.
 
-//                               NOMES DE TABELAS NO PLURAL
+// Então, vamos ao banco puxar nossa tabelinha de pessoas que eu já deixei aberta no terminal do SQL. Mas se você quiser abrir: select* from Pessoas;, selecionar tudo da tabela Pessoas.
 
-//Algumas vezes algo que parece trivial, como criar nomes para as tabelas de um banco, pode virar uma questão um pouco mais complexa - uma dessas questões é o singular x plural nas tabelas SQL.
+// Então, temos as quatro operações principais, são as que mais fazemos quando estamos desenvolvendo APIs como estamos fazendo nesse projeto, que é o CRUD. Então, criamos novos registros, lemos, read, os registros que já estão no banco, atualizamos, update os recursos e deletamos recursos. Faremos essas quatro operações básicas e começaremos por ler o que já tem no banco. Primeiro lemos o que tem no banco, depois cria coisas novas, depois atualiza...
 
-// Quando usamos ORMs (como o Sequelize) ou outros frameworks (como o Rails se estiver trabalhando com a linguagem Ruby) para trabalhar com os bancos de dados, o comportamento padrão dessas ferramentas é “pluralizar” automaticamente todos os nomes de tabelas. Ou seja, quando criamos a tabela Person (Pessoa em inglês) através do Sequelize, ele vai se conectar ao banco e criar a tabela com o nome de People (Pessoas em inglês). Isso vale para qualquer nome: Name (Nome) se torna Names (Nomes) e por aí vai.
+// Então, vamos criar um método que vai ler o que está aqui no banco, se conectar com o banco, ler o que está acontecendo, pegar todos os registros e nos mostrar no formato .json para podermos abrir no Postman. Então, o nosso método vai se chamar pegaTodasAsPessoas (req, res), que vai pegar todas as pessoas que estão no banco. Os parâmetros que esse método vai receber são: requisição e resposta, porque estamos trabalhando com requisições HTTP. Abre e fecha parênteses, abre e fecha chaves, desculpa.
 
-// Quando se trabalha com nomes em inglês isso não costuma ser um problema em si, pois a pessoa não precisa se preocupar em avisar ao Sequelize “olha, a tabela que eu chamei de Person você procura no banco como People, ok?”; o próprio ORM já faz essa conversão e sabe exatamente como transformar palavras em inglês do singular para o plural e vice-versa.
+// Antes de começarmos a escrever o que tem dentro desse método, vamos colocar duas palavras-chave: a primeira é static. Estou declarando com ela que esse método ele pode ser chamado no código, então posso chamá-lo sem ter que criar uma nova instância de classe, sem ter que criar um new PessoaController. Veremos isso um pouco mais para frente, quando começarmos a chamar esses métodos. Não precisamos criar uma PessoaController, salvar isso em uma constante. Para isso, usamos a palavra-chave static.
 
-// Bom, e quando estamos usando termos em português? Aí temos que ficar de olho para prevenir este comportamento padrão do Sequelize (e de outros ORMs e frameworks). Por esse motivo, ao invés de criar a tabela com o nome de Pessoa, já fizemos isso no plural, Pessoas. Isso evita que o Sequelize tente fazer essa conversão sozinho… O que não seria um problema em Pessoa x Pessoas, mas uma das tabelas do nosso projeto se chama Nivel, e se deixarmos o Sequelize resolver, ele irá transformar em Nivels e não Niveis.
+// A outra palavra-chave que usaremos é async, uma das palavras-chave do par async/await, que diz que esse método precisa esperar resolver alguns outros métodos internos que usaremos aqui dentro para então devolver a resposta. Faz parte da questão de sincronia e assincronia do JavaScript. Então vamos lá?
 
-// Há também alguns recursos do Sequelize que você pode usar para controlar alguns comportamentos padrão do ORM:
+// Vamos criar uma nova const, que será chamada de const todasAsPessoas = await, e dentro dela eu vou guardar o resultado do que buscaremos no banco. Então, aqui, eu vou pedir para o JavaScript esperar ir até o banco, pegar as coisas e voltar, então ele vai dar um await, a palavra-chave que faz par com async.
 
-// Utilizando a opção freezeTableName para “congelar” o nome da tabela, assim o Sequelize não vai tentar pluralizar:
+// O que eu faço? Eu tenho que ir à database e, dentro dela, o JavaScript vai procurar por pessoas, pelo método que está em “api> migrations> pessoas.js”, onde estamos retornando pessoas.
 
-// sequelize.define('User', {
-//   // ... (attributes)
-// }, {
-//   freezeTableName: true
-// });
+// Então, eu vou em database, que já chamamos no início do código, dentro de database ele vai procurar Pessoas, e só prestando atenção, não é o nome do arquivo, e sim a const que está sendo retornada, estamos puxando através de database. Por isso que tem sempre que prestar atenção, porque palavras com letra maiúscula e minúscula fazem diferença.
 
-// Definindo o nome da tabela manualmente:
+// E o que vem aqui? Vamos usar um método do Sequelize, chamado “encontrar tudo”, findAll. Não vai levar nenhum parâmetro porque está encontrando tudo, não precisamos, nesse momento, dar nenhum parâmetro.
 
-// sequelize.define('User', {
-//   // ... (attributes)
-// }, {
-//   tableName: 'Employees'
-// });
+// Então, o que está acontecendo? Esse controlador vai consultar a tabela de pessoas e trazer o resultado. E aí que entra o Sequelize em ação, porque a query que seria selectAll, cadê meu terminal? A * query* que seria select * from pessoas e que poderíamos colocar no formato SQL dentro do código mesmo, foi substituída por um método escrito em JavaScript, que é esse método findAll do Sequelize.
 
-// Se, durante o desenvolvimento do seu projeto, você encontrar bugs relacionados a nomes de tabelas, dê uma olhada no código dos modelos e confira os nomes! :)
+// Ele que é responsável por fazer as queries necessárias no banco e tudo o que temos que fazer é tratar o resultado da requisição e passá-la para frente. Então, vamos testar ver, se está funcionando. E, para isso, vamos precisar de uma rota, porque para puxarmos, precisaremos ir ao Postman e falar “vai na rota tal e chama esse método”
 
-// ---------------------------------------------------------------------------------------------------------------------------------------
+//Antes de fazermos isso, vamos retornar, que estamos só criando a const e se não pedimos para retornar as coisas, ele não vai retornar.
 
-// Agora vamos usar o sequelize para fazer as migrações do banco, para gerenciar as alterações do nosso esquema e guardar essas alterações, e agente vai fazer isso com um comando chamado migrate. o comando vai ser "npx sequelize-cli db:migrate"
+// Então, faremos duas coisas, na verdade, para deixarmos esse método um pouco mais bonito: vamos retornar return res.status(200). json (todasAsPessoas), a resposta da requisição. Nessa resposta, vamos mandar um status code, de 200, que é o ok, o .json, formato que vimos no começo e que queremos inserir agora, e todasAsPessoas, porque ainda não está convertida para o .json, formato em que queremos receber, ainda precisa passar, ser convertida, e aí ser retornada.:
 
-// Caso apareça que o acesso foi negado para o usuário root, você pode olhar se os configs estão certos, e caso esteja tudo certo, você pode tentar trocar de usuário. você pode ver os usuários que você tem e que podem acessar o banco com o comando: "select user from mysql.user;", após ter acessado o sql, claro, se você não tiver nenhum usuário que possa usar, você pode pesquisar, como criar um. DEpois é só você mudar os configs para receber esse novo usuário com a senha desse usuário.
+class PessoaController {
+    static async pegaTodasAsPessoas(req, res) {
+        const todasAsPessoas = await database.Pessoas.findAll()
+        return res.status(200).json(todasAsPessoas)
+    }
+}
 
-// Agora podemos ver que foi criado um arquivo na pasta de migrações chamado "20211231143412-create-pessoas.js" baseado no "create pessoas"
+------------------------------------------------------------------------------------------------------------------------------------------
 
-//agora, com o mysql aberto no terminal, vamos dar um "use escola_ingles" e pedir para ele mostrar as tabelas: "show tables;"
-// "describe pessoas;"
-// " INSERT INTO pessoas (nome, ativo, email, role, createdAt, updatedAt) value ("Carla Gomes", 1, "carla@carla.com", "estudante", NOW(), NOW()); "
-// "select * from pessoas;"
+// Então, agora o método já está aqui, já tem o que retornar. Antes só de testarmos, vamos envolver tudo isso aqui por um try-catch, para deixarmos esse código mais organizado e para o JavaScript poder avisar se tiver algum tipo de erro. Então, no try, colocamos. Eu vou dar um “Ctrl + X”, recortar as linhas de código do const e do return, e eu vou colar dentro do try.
 
-// Popular banco dessa forma é um pouco contraproducente, porque é normal, enquanto estamos nessa fase de desenvolvimento, termos que dropar, refazer tabela, dropar tabela, refazer banco, criar banco. Porque é normal, quando estamos desenvolvendo, inserir e destruir muitas coisas.
+// Depois do try, temos o catch error. O que acontece quando tem algum erro: retornamos a um status de erro, vamos retornar 500, que é um erro de parte do servidor. E aí vou pedir para ele converter esse erro para o formato .json, mostrando, nesse .json, a mensagem de erro.
 
-// Se populamos o banco assim, podemos precisar, de repente, deletar essa tabela, ou refazer. Se precisarmos popular tudo de novo, é muito demorado e trabalhoso. Então, usaremos um recurso que é do SQL: os arquivos seeders, sementes, e que também estão disponíveis no Sequelize para usarmos pelo sequelize-cli, pela linha de comando.
+// Então, o que está acontecendo? Eu fiz um try-catch para caso dê algum erro, aconteça alguma coisa, o JavaScript ser capaz de pegar um erro no ar e nos mostrar esse erro no formato .json no próprio Postman, onde faremos nossos testes de rota:
 
-// Deixa eu vir no terminal onde estávamos (não é o do SQL) . Colocando os nossos comandos do sequelize-cli, e vamos criar um arquivo de seed novo para inserirmos alguns dados na tabela “pessoas”. Então, npx sequelize-cli seed:generate –name demo-pessoa, ou seja, vamos criar um arquivo seed, de nome “demo-pessoa”.
+class PessoaController {
+    static async pegaTodasAsPessoas(req, res) {
+        try {
+            const todasAsPessoas = await database.Pessoas.findAll()
+            return res.status(200).json(todasAsPessoas)
+        } catch (error) {
+            return res.status(200).json(error.message)
+        }
+    }
+}
 
-// assim foi criado o 20211231190236-demo-pessoa.js
+// A última coisa que temos que fazer, antes que eu esqueça, é exportar tudo isso. Então, module.exports = PessoaController, para poder ficar disponível para ser utilizado no restante do código. Então, agora é testar e ver se deu tudo certo.
 
-// Vamos dar uma olhada então. Ele cria todos os seeds, ao contrário das migrações que vão com as informações certas, o Sequelize cria todos os seeds com esse mesmo modelo. Essas mesmas linhas. Então, a primeira coisa que faremos é tirar as linhas que estão comentadas.
+------------------------------------------------------------------------------------------------------------------------------------------
 
-// O código começa em await. Então tiraremos as linhas que estão comentadas. E a mesma coisa no método down. O código começa com o await, então tiramos o resto. Beleza. O código, na verdade, para começarmos, é esse:
+//                      DICA:
 
-// O que está acontecendo nessas linhas é parecido com a migração: temos o up e o down. No up, o Sequelize vai chamar o método bulkInsert ou inserir em lote, traduzindo muito livremente. Em down, a mesma coisa: ele vai deletar em lote: bulkDelete. Ele deixou como exemplo uma tabela que chama People, por coincidência nossa tabela chama Pessoas, mas é só uma coincidência. E dentro, ele deu um exemplo de dados para inserirmos nessa tabela People. A pessoa tem um nome, informação booleana etc.
+Dependendo da necessidade ou da complexidade do projeto, é possível adicionar mais camadas à sua aplicação, além das que o MVC contempla (modelo - visão - controlador). Por exemplo, se vários controladores utilizam métodos semelhantes para as operações de banco, é possível abstrair estes métodos para uma camada própria, para que sejam utilizados pelos controladores.
 
-// Então iremos usar essa estrutura para popular com os nossos dados de exemplo. A primeira coisa a fazer é trocar a tabela People pela tabela Pessoas, que é o nome da nossa tabela.
+Exemplos de camadas extras são: middlewares para autenticação de usuários e a chamada camada de serviços, que pode ser implementada para separar os métodos de acesso aos modelos, não sendo nesse caso o modelo acessado diretamente pelo controlador.
 
-// Para popular a tabela eu vou pegar uns arquivos prontos e colar no demo-pessoas 
-
-// Podemos, agora, rodar o comando de seed para aí sim o Sequelize conectar com o banco e enviar esses dados para ele.
-
-// Então rodamos agora "npx sequelize-cli db:seed:all". Só tem um seed para fazer, mas podemos passar o comando all mesmo porque é o único que ele vai fazer.
-
-// Podemos, então, voltar no nosso terminal do SQL, e dar um novo "select * from pessoas;" e ver se entrou.
-
-
-//                                                      IMPORTANTE:
-
-
-
-Rodou o comando de migração antes de fazer alguma alteração importante em algum modelo e agora as tabelas do banco não estão como você precisa? Bom, já comentamos que as migrações em ORM também servem para termos um tipo de “versionamento” (feito através do arquivo SequelizeMeta no seu banco) e poder voltarmos o banco a um estado anterior à última alteração.
-
-Como fazer isso? Através dos comandos:
-
-npx sequelize-cli db:migrate:undo
-
-Este comando vai desfazer somente a última migração feita, na ordem em que os arquivos são lidos e executados pelo Sequelize (de acordo com as datas e horários no nome dos arquivos). Se você tiver rodado 3 migrações - por exemplo, das tabelas Niveis, Turmas e Matriculas, o comando npx sequelize-cli db:migrate:undo vai desfazer apenas Matriculas.
-
-Você pode rodar o mesmo comando novamente para ir desfazendo as migrações na ordem em que foram executadas, ou usar o comando:
-
-db:migrate:undo --name [data-hora]-create-[nome-da-tabela].js
-
-Para desfazer uma migração específica. Nesse caso, lembre-se que só irá funcionar se não tiver nenhuma outra tabela relacionada a ela!
-
-Desfazendo seeds
-Os seeds servem para termos dados iniciais no banco, normalmente dados de exemplo e/ou para teste. Quando você quiser desfazer essa operação para limpar esses dados do banco, pode rodar o comando:
-
-npx sequelize db:seed:undo 
-
-Para desfazer o último seed feito.
-
-npx sequelize-cli db:seed:undo --seed nome-do-arquivo 
-
-Para desfazer seeds de uma tabela específica.
-
-npx sequelize-cli db:seed:undo:all 
-
-Para desfazer todos os seeds feitos.
-
-Importante:
-
-Ao contrário das migrações, não existe nenhum recurso de “versionamento” de seeds, só é possível incluir no banco e desfazer a operação (o que vai deletar os registros do banco).
-
-Se você rodar o :undo em uma tabela e quiser mais tarde utilizar os seeds novamente na mesma tabela, os IDs deles serão outros. Por exemplo:
-
-Rodamos o comando npx sequelize-cli db:seed:all e populamos a tabela:
-
-| id | nome           | ativo     | email             | role      | createdAt           | updatedAt           |
-|----|----------------|-----------|-------------------|-----------|---------------------|---------------------|
-| 1  | Ana Souza      | 1         | ana@ana.com       | estudante | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-| 2  | Marcos Cintra  | 1         | marcos@marcos.com | estudante | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-| 3  | Felipe Cardoso | 1         | felipe@felipe.com | estudante | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-| 4  | Sandra Gomes   | 0         | sandra@sandra.com | estudante | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-| 5  | Paula Morais   | 1         | paula@paula.com   | docente   | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-| 6  | Sergio Lopes   | 1         | sergio@sergio.com | docente   | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-
-Se rodarmos o comando npx sequelize-cli db:seed:undo:all para deletar esses registros e, em seguida, refazer os seed novamente com npx sequelize-cli db:seed:all, o resultado será o abaixo. Compare os números de id!
-
-| id | nome           | ativo     | email             | role      | createdAt           | updatedAt           |
-|----|----------------|-----------|-------------------|-----------|---------------------|---------------------|
-| 7  | Ana Souza      | 1         | ana@ana.com       | estudante | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-| 8  | Marcos Cintra  | 1         | marcos@marcos.com | estudante | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-| 9  | Felipe Cardoso | 1         | felipe@felipe.com | estudante | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-| 10 | Sandra Gomes   | 0         | sandra@sandra.com | estudante | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-| 11 | Paula Morais   | 1         | paula@paula.com   | docente   | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-| 12 | Sergio Lopes   | 1         | sergio@sergio.com | docente   | 2020-04-15 01:14:12 | 2020-04-15 01:14:12 |
-
-Os registros terão novos IDs, pois uma vez deletado o ID nunca é reutilizado. Se você estiver migrando/seedando tabelas relacionadas, é sempre bom conferir os IDs de todas, do contrário o Sequelize vai lançar um erro de relação.
+Lembrando sempre que, quanto mais separadas as responsabilidades, mais organizado fica o sistema. Nem sempre é preciso separar a aplicação em camadas extras, mas você pode fazer isso se perceber que alguma das camadas está fazendo mais do que a tarefa para a qual foi criada.
