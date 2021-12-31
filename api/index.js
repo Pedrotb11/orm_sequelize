@@ -16,19 +16,8 @@ app.listen(port, () => console.log(`Servidor está rodando na porta ${port}`));
 
 module.exports = app;
 
-//instalei o sequelize e o sequelize-cli que é o sequelize de terminal
-//rodando no terminal o "npx sequelize-cli init" cria um banco vazio para você. Esse "npx" é pra rodar as dependências que estão instaladas localmente, uma vez que as coisas que a gente instalou anteriormente, a gente não instalou de forma global. tendo rodado, ele criou vários diretórios como config, migrations, models e seeders.
+//vamos agora criar o nosso banco com o nome "escola_ingles", e pra isso vamos rodar o "mysql -u root -p"no terminal, e "create database escola_ingles;"
 
-//Há porém um problema, a gente criou uma pasta api para passar os arquivos da nossa aplicação dentro, porém como estamos rodando os comandos direto na raiz do projeto, a gente vai precisar passar os arquivos que o sequelize criou na raiz pra dentro da nossa pasta.
+//agora a gente tem que avisar a aplicação que existe um banco sql e quem a gente tem que se conectar com ele. Então a gente vai no api/config/config.json e troca os dados que tem lá, pelos dados do nosso banco. lembrando que vamos preencher apenas o de "development", que é o que vamos trabalhar por enquanto
 
-//Agora, como a gente mudou as coisas de lugar, precisamos avisar o Sequelize para ele não ficar perdido. Então vamos criar um arquivo chamado .sequelizerc, que inclusive está previsto na documentação do sequelize, e passar uma parte do código que tem lá, sem passar o babel, que não vamos utilizar por enquanto. lá deve estar passando os novos caminhos das pastas, que nesse caso é './api/nomde-da-pasta'.
-
-//Se você utiliza Linux e está com problemas para fazer o Sequelize acessar o banco (o erro de “acesso negado ao usuário 'root'@'localhost'”), como vimos no vídeo, você pode criar um novo usuário para este projeto com os comandos:
-
-//mysql> CREATE USER '[seu nome de usuário]'@'localhost' IDENTIFIED BY '[sua senha]';
-
-//Em seguida, dê ao novo usuário privilégios:
-
-//GRANT ALL PRIVILEGES ON * . * TO '[seu nome de usuário]'@'localhost';
-
-//Por último, rode o comando: FLUSH PRIVILEGES; para recarregar as permissões.
+//Na pasta index.js, está sendo checado o ambiente que fazemos; por enquanto, de desenvolvimento, pegando essas configurações, que estão no arquivo config.json, e essas informações são utilizadas para criar uma nova instância de Sequelize. A partir disso, o Sequelize, usando o file system (fs), percorrerá todos os modelos que criarmos e que estarão dentro da pasta index.js. E aí fazer as associações, conectar ao banco etc.
