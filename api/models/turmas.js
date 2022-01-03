@@ -13,8 +13,12 @@ module.exports = (sequelize, DataTypes) => {
             Turmas.hasMany(models.Matriculas, {
                     foreignKey: 'turma_Id'
                 }) //chegando na tabela sem o foreignKey, o ORM automaticamente vai criar um campo TurmaId mas vamos sempre passar o nome que queremos
-            Turmas.belongsTo(models.Pessoas)
-            Turmas.belongsTo(models.Niveis)
+            Turmas.belongsTo(models.Pessoas, {
+                foreignKey: 'docente_Id'
+            })
+            Turmas.belongsTo(models.Niveis, {
+                foreignKey: 'nivel_Id'
+            })
         }
     };
     Turmas.init({
