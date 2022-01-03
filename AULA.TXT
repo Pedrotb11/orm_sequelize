@@ -1,38 +1,65 @@
-//                                 CRIANDO MAIS TABELAS 
+//                         FAZENDO ASSOCIAÇÕES
 
 
-// Voltando ao nosso diagrama, a tabela Pessoas já está criada. Inclusive, já fizemos o controlador de pessoas para fazer o CRUD relacionado a esse modelo.
+// Bom, já criamos todos os arquivos de migração e todos os modelos que precisamos, de acordo com o nosso diagrama de banco.
 
-// Temos mais três tabelas e já sabemos como usar o Sequelize para criar essas tabelas, os arquivos de migração, etc. Fizemos isso usando npx sequelize-cli. Então vamos voltar no nosso terminal e começar a linha de código: npx sequelize-cli model:create. Vamos criar os modelos dos arquivos de migrações para essas outras três tabelas, para darmos continuidade ao projeto.
+// Mas antes de rodarmos o comando de migração para mandar tudo para o banco, vamos dar uma olhada na nossa tabela Turmas. Além do ID, a tabela Turmas tem três colunas,a coluna data_inicio, que definimos quando criamos o modelo, e tem mais duas que estão ligadas à tabela Pessoas através de chaves estrangeiras: docente_id, que é a coluna que liga Turma a Pessoas, e nível_id, que é a coluna que liga Turma a Nível.
 
-// Bom, npx sequelize-cli model:create --name é a linha de comando para o nome da próxima tabela que criaremos. Qual tabela crio em seguida? Tanto faz, posso escolher? Não exatamente. Vamos olhar a tabela Pessoas: ela tem PK, que é a chave primária,primary key, que é a ID, chave que usamos para identificar cada coluna e cada linha de pessoa, cada pessoa tem seu ID.
+// Porém, se viermos no nosso código, em nenhuma parte dele falamos para o Sequelize que existe essa relação entre as tabelas. Por enquanto, nossa tabela Turmas só tem uma coluna no modelo, que é a coluna data_início, e no arquivo de migração também só tem data_início e as outras três colunas que são as que o Sequelize cria.
 
-// Olhando o todo, as informações de Pessoas são utilizadas por outras duas tabelas: pela tabela Turma, através da linha docente_id, e a tabela Matrículas, através da coluna estudante_id. O mesmo ocorre com a tabela Nível, ela fornece informações para tabela Turma através da coluna nível_id.
+// Então, como fazemos para que o Sequelize consiga fazer a relação entre as colunas? Porque o que está no nosso diagrama de banco é o que tem que se refletir no banco. Então as tabelas no banco devem ser criadas exatamente da forma que estão no nosso diagrama.
 
-// Então, como decidimos qual a ordem que fazemos a criação dos nossos modelos? Começamos criando os modelos por aqueles que não usam chaves estrangeiras, FK, foreign keys. Então, começamos por Pessoas e temos outra tabela que também não usa chaves estrangeiras, só tem a coluna ID e um atributo que é dela mesma, a descr_nivel, em que informaremos se o nível do curso é intermediário, básico, avançado, etc. Então, vamos começar por Nível.
+// Vamos dar uma olhada na documentação do Sequelize, na parte de associações, para sabermos como associamos as tabelas. Ela diz que o Sequelize dá suporte para associações padrão no SQL: associação um para um, um para muitos e muitos para muitos. E ele faz isso através de quatro métodos.
 
-// A partir de Nível, faremos as próximas. Voltando ao terminal, criaremos a tabela Nível. Chamarei de Niveis, já no plural. Deixei um material para vocês saberem mais sobre essa questão de singular e plural quando criamos. --atributes, com s, mesmo tendo apenas um.
+// E temos que descobrir na documentação qual método usamos e quais associações que precisamos fazer de acordou com o nosso diagrama.
 
-// Quais são os atributos da nossa tabela? O ID de Nivel não precisamos colocar, já vimos quando criamos a tabela Pessoas, então só precisamos inserir o atributo descr_nivel, que vai ser um dado do tipo string.
+// Quando criamos o diagrama, usamos uma anotação para ilustrar quais são os relacionamentos entre as tabelas.
 
-// Então a linha de código fica: npx sequelize-cli model:crear –name Niveis –attributes descr_nivel:string. Pressiono a tecla Enter, um novo modelo foi criado e uma nova migração foi criada.
+// O risco sozinho e o tridente, que chamamos de pé de galinha porque parece um pé, dizem em conjunto que entre a tabela Pessoas e a tabela Turmas existe uma relação de um para vários. Como assim? Vamos ler essa relação. Na tabela Turmas, essa relação é feita através da coluna docente_id, porque na tabela Pessoas entram professores, alunos, staff, etc. E um professor pode trabalhar em diversas turmas: pode dar aula de básico, pode dar aula de avançado, etc.
 
-// Vamos voltar no diagrama. Qual é o próximo que crio? A tabela Turma utiliza dados da tabela Pessoas, que já existe. A tabela Nivel também já criamos, e Turma fornece também um dado para entrar na tabela Matrículas, através da coluna “turma_id”. Então vamos deixar para criar Matrículas por último e trabalhar com Turmas. Então vamos criar o modelo Turmas e o arquivo de migração Turmas: npx sequelize-cli model:create –name Turmas --attributes.
+// Então o registro de um mesmo ID de professor pode aparecer várias vezes na tabela Turmas. É uma relação de um para vários. A mesma coisa “nível”, cada um dos níveis – básico, avançado, intermediário de inglês – eu posso ter várias turmas desse nível: turmas de manhã, turmas à tarde, etc. Então é uma relação de um nível para várias turmas, e por aí vai.
 
-// Ao criarmos o modelo, só colocamos atributos que são, digamos, naturais da tabela. Tanto docente_id quanto nível_id são chaves estrangeiras, não são dessa tabela mesmo. O único dado que realmente pertence à tabela Turmas, não é um dado importado, digamos assim, de outras tabelas, é o atributo que chamamos de data_inicio, e o tipo de dado é somente data. Então, vamos criar somente com o atributo data_inicio:
+// A mesma coisa acontece em Matrículas: uma turma pode ter várias matrículas, porque várias pessoas se matriculam na mesma turma, então cada turma tem várias matrículas ou nenhuma, caso ninguém se matricule nela. E um estudante pode ter várias matrículas também, porque ele se matricula no básico, depois se matricula avançado. Podemos abrir depois uma turma de conversação e ele se inscreve em conversação e básico.
 
-// npx sequelize-cli model:create –name Turmas –attributes data_inicio:dateonly. Se colocássemos só date, o Sequelize pediria que inseríssemos data e horário. Porém, como é data de início, não precisamos do horário, só da data. Então, usamos o tipo de dado dateonly. Apertamos a tecla “Enter”.
+// Então as relações que temos na nossa tabela são relações de um para vários, de one to many. Como fazemos para usar os métodos do Sequelize para dizer isso no nosso código? O Sequelize diz também, está em inglês, mas vamos juntos, que has many, “tem muitas”, uma tradução bem livre do nome desse método, essa associação significa que uma relação de um para vários existe entre as tabelas A e B.
 
-[Aula5_video1_imagem4]
+// Então, entre as tabelas A e B há vários, podemos usar o método hasMany. Ele diz também que a chave estrangeira, a FK, tem que ser definida na tabela, no modelo B, que é o modelo que está sendo passado por parâmetro do método. Então, vamos copiar A.hasMany(B) e passar para o nosso código, e ver como traduzimos esse exemplo.
 
-// Novo modelo foi criado, nova migração foi criada, prefeito. Vamos agora fazer. Deixa eu limpar minha tela. Fazer a nossa última tabela, que agora que temos todas as outras, podemos criar a tabela Matrículas. Nela, o único atributo que é natural dela, que é dela mesmo, é status, do tipo string. Então vamos lá.
+// As associações são feitas nos modelos, então vamos começar pelo modelo de Pessoas. Elas são feitas na parte do código Pessoas.associate = function(models) {, inclusive o Sequelize já deixa comentado a parte onde ele quer que coloquemos as associações // associations can be defined here.
 
-// npx sequelize-cli model:create –name Matriculas –attributes status:string. Opa, escrevi npz ao invés de npx. Vamos voltar com a setinha para cima. Criou novo modelo e nova migração.
+// Então vamos colar A.hasMany(B). A vira Pessoas, porque é o modelo do qual estamos falando, e ele tem vários, pertence a vários ou faz parte de vários do modelo-alvo, da tabela-alvo.
 
-// Vamos voltar no nosso código no editor de código e ver se está tudo certo. Abrimos a árore e na pasta “api > models”, ele criou um novo arquivo chamado níveis.js com o atributo que pedimos, e a mesma coisa para tabela Turmas, turmas.js, e para a tabela Matrículas, matriculas.js, o atributo e matrículas. Beleza. Na pasta de migrações “api > migrations” foram criados mais três arquivos com as informações que solicitamos.
+// Vamos olhar no nosso diagrama. Pessoas tem a relação de um para vários com Turmas e relação de um para vários para Matrículas.
 
-// Lembra que quando criou o arquivo de migração “pessoas”, o Sequelize colocou um número no começo que corresponde à data e horário? Isso tem uma razão de ser, quando o Sequelize rodar as migrações, que não faremos agora, ele vai rodar todas as migrações que estão na pasta na ordem que criamos, por isso que seguimos também essa ordem de criar. Deixa eu voltar, tirar o zoom. Meu zoom não quer sair. Pronto.
+// Então ele pertence a vários, participa de vários. Pessoas.hasMany(models.Turmas) e também podemos copiar porque além de Turmas, ela tem uma relação do mesmo tipo com Matrículas: Pessoas.hasMany(models.Matriculas). É o models que vai receber como parâmetro da função, do método de fora.
 
-// Por isso que seguimos a ordem de criação, porque se eu tento rodar uma migração no arquivo Turmas e o Sequelize não encontra Pessoas, não existe ainda essa migração feita, ele vai ficar confuso, porque vamos dizer para ele que tem uma chave estrangeira e ele não vai encontrar a tabela, não vai encontrar o modelo. Por isso que quando rodamos as migrações é importante seguir essa ordem, porque ele vai criar primeiro migrações de Níveis e quando ele criar de Turmas, Níveis e Pessoas já existem no banco, então ele não vai ficar perdido.
+// Então já estabelecemos uma relação entre “Pessoas e Turma”, e, “Pessoas e Matrículas”. Nível, a mesma coisa: nível vai ter o mesmo tipo de relação com Turma, e Turma vai ter o mesmo tipo de relação com Matrículas.
 
-// A mesma coisa para Matrículas. Então, antes de rodarmos a migração, passaremos para o Sequelize quais são as chaves estrangeiras que cada tabela usa, e vamos fazer isso agora.
+// Então podemos voltar no modelo de Níveis “api > models > niveis.js”, deixa eu copiar a linha que vamos repetir: Pessoas.hasMany(models.Matriculas), então nosso modelo de níveis vai ter o mesmo tipo de associação, só que no lugar de Pessoas, vai ser Niveis, e a relação de um para vários é com Turmas: Niveis.hasMany(models.Turmas). Deixa eu salvar.
+
+// E Turmas tem uma relação do mesmo tipo com Matrículas “api>models>turmas.js”: Turmas.hasMany(models.Matriculas). Vamos ver se eu não esqueci nada: Pessoas com Matrículas, Pessoas com Turma, Nível com Turma e Turma com Matrículas. Ok. Porém, falta um detalhe. Nós demos nomes para as colunas. Eu chamei uma coluna de docente_id, que é a coluna de Turma que faz a ligação com Pessoas, nivel_id, etc. E ainda não falamos em nenhuma parte do código os nomes dessas colunas.
+
+// O que aconteceria se eu rodasse as migrações, se eu mandasse dessa forma para o banco? É um comportamento que é padrão de ORM. O Sequelize, por padrão, se passamos para migração o código Pessoas.hasMany(models.Matriculas), por exemplo, ele vai criar no banco uma coluna chamada PessoaId. Ou seja, ele vai associar que é um plural, vai tentar pegar o singular, “pessoa”, e vai colocar a palavra ID depois.
+
+// Só que tem duas coisas, primeiro, que quando criamos o diagrama de banco, dissemos o nome da tabela exato que queremos. E outro, com Pessoa tudo bem, o singular e o plural se resolvem, mas quando chega no modelo Niveis, ele vai tentar criar NiveiId, e não vai dar certo, não é o que estamos esperando. Não é uma palavra que existe em português. Como estamos trabalhando com os nomes em português de modelo, de tabela, isso pode dar problema.
+
+// Como fazemos, então, para prevenir esse comportamento padrão? O Sequelize tem uma opção para passarmos exatamente o nome da tabela que queremos, na parte de relações de um para vários, nas opções, ele fornece o nome dessa opção. Chama foreignKey.
+
+// Então a passamos como segundo parâmetro, e ela vai dentro de um objeto. Então, podemos voltar no código “api > models > pessoas.js”, eu vou deixar aberto nossos arquivos níveis, pessoas, turmas e matrículas para podermos fechar. Então, todas as relaçõeshasMany, “tem vários”, precisamos colocar essa opção para podermos dizer qual o nome da tabela que desejamos que seja criado, e passamos como segundo parâmetro.
+
+// Então, na relação entre Pessoas e Turmas, o nome da nossa coluna é docente_id, e em Matrículas, o nome da coluna é estudante_id. Só confirmar no nosso diagrama se eu coloquei os nomes certos. Sim, entre Pessoas e Matrículas a coluna se chama estudante_id, e docente_id entre Turma. Falta fazermos isso em Nível e em Turma. Então vamos voltar aqui.
+
+// No modelo Níveis “api> models> niveis.js”, mesma coisa, o nome da coluna que queremos que seja criado é nivel_id, e em turmas “api> models> turmas.js”, o nome da coluna vai ser turma_id. Deixa eu só confirmar se está tudo certo, nível_id, turma_id. Perfeito. Só o que falta fazer agora é outro lado dessa relação.
+
+// Se olharmos a documentação do Sequelize, ela traz que as associações são feitas. Para criar uma relação de um para vários, eu tenho que usar o método hasMany, “tem vários”, e “pertence a”, usar os dois juntos. Só usamos o hasMany, vamos agora inserir o “pertence a”. Só que vamos inserir o “pertence a” do outro lado da relação.
+
+// Eu vou copiar um exemplo: Bar.belongsTo(Foo), e vamos adicionar o método belongsTo do outro lado das relações. Então vou adicionar em Matrículas para Pessoas, Matrículas para Turma, Turma para Pessoas e Turma para Nível.
+
+// Então vamos voltar primeiro no modelo Turmas “api> models> turmas.js”, já estamos aqui, e vamos adicionar a linha Bar.belongsTo(Foo), que ficará Turmas.belongsTo(models.Pessoas), e Turmas.belongsTo(models.Niveis).
+
+// E a mesma coisa em Matrículas “api> models> matriculas.js”. Por enquanto, não tem nenhuma associação, ela vai receber só esse tipo, é a ponta do muitos, então: Matriculas.belongsTo(models.Pessoas) e Matriculas.belongsTo(models.Turmas). Beleza?
+
+// Então antes de rodar as migrações, já avisamos nos modelos, onde as associações estão feitas. Só falta associar nas migrações em qual das colunas que as FKs vão ser adicionadas porque, por enquanto, essa informação também não existe. Vamos fazer isso em seguida e, assim, poderemos rodar as migrações.
+
+DOCUMENTAÇÃO:
+https://sequelize.org/v7/manual/assocs.html#one-to-many-relationships
