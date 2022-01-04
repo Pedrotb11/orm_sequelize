@@ -5,7 +5,12 @@ module.exports = (sequelize, DataTypes) => {
         ativo: DataTypes.BOOLEAN,
         email: DataTypes.STRING,
         role: DataTypes.STRING
-    }, { paranoid: true })
+    }, {
+        paranoid: true,
+        defaultScope: { //Quero que todos os meus selects só retornem registros que tenham o atributo ativo, que é uma das colunas do meu banco, true.
+            where: { ativo: true }
+        }
+    })
     Pessoas.associate = function(models) {
         Pessoas.hasMany(models.Turmas, {
             foreignKey: 'docente_id'
