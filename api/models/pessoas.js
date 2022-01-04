@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
         paranoid: true,
         defaultScope: { //Quero que todos os meus selects só retornem registros que tenham o atributo ativo, que é uma das colunas do meu banco, true.
             where: { ativo: true }
+        },
+        scopes: {
+            todos: { where: {} },
+            //etc: { constraint: valor }
         }
     })
     Pessoas.associate = function(models) {

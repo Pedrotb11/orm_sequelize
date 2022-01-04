@@ -1,37 +1,34 @@
-//                       ESCOPOS DE MODELO
+//                           OUTROS ESCOPOS
 
-https://sequelize.org/master/manual/scopes.html
+[00:00] A propriedade defaultScope, escope padrão, que incluímos agora, como o próprio nome diz, define um escopo padrão, ou seja, se não indicarmos nada o Sequelize sempre vai usar esse where que colocamos para montar a query, montar a query select dele. Mas dá para ter quantos escopos o projeto precisar. Então vamos adicionar mais um para sobrescrever essa regra padrão caso seja necessário trazer todos os registros, inclusive os que tem ativo false.
 
-//         O QUE É ESCOPO ????
+[00:33] Temos uma propriedade aqui que é a defaultScope e vamos incluir em seguida uma outra propriedade que vai chamar scopes. Aqui dentro vamos abrir outro objeto e nesse objeto conseguimos passar quantos outros escopos forem necessários.
 
-Falando de produto, escopos definem funcionalidades e funções.
+[00:55] Vou criar outro escopo que vou chamar de todos e dentro dele abro outro objeto e passo outro where, só que nesse caso o where que vou passar vai ser um where vazio, mas aqui em seguida depois de todos podemos ter quantos precisarmos, com todas as restrições, os constraints que precisarmos passar.
 
-Quando falamos de programação, existem diversos tipos de escopo. Por exemplo, em JavaScript podemos definir o escopo de uma variável - escopo global, de uma função, etc. O escopo é como chamamos as regras que definem quão acessível ou “visível” uma informação (por exemplo, uma variável) está, dependendo da parte da aplicação. Um escopo pode ter identificadores, alguma instrução de código ou algoritmo.
+[01:22] Aqui só temos que prestar um pouco de atenção na sintaxe. Temos essa propriedade defaultScope que define o padrão, e em seguida temos outra onde colocamos os outros. O nome defaultScope é um nome dado pelo sequelize, esse não podemos mudar, mas onde escrevi todos foi um nome que eu dei e os outros escopos que não são o padrão vamos chamar pelo nome.
 
-No caso do Sequelize, podemos determinar o escopo padrão (defaultScope) que justamente define quais restrições e definições serão utilizadas na query… por padrão. E além do escopo padrão podemos definir outros, enquanto fizer sentido para a aplicação, e dar a cada escopo um nome que será usado pelo JavaScript para identificá-lo.
+[01:52] No todos só passei um where vazio. Vamos então fazer algumas modificações no controlador onde estamos chamando os métodos e nas rotas para poder usar os dois casos na nossa API. Vou fechar o modelo pessoas, abrir o controlador de pessoas, e aqui o primeiro método do nosso controlador de pessoas é um método que chama pegaTodasAsPessoas, que por enquanto está fazendo um findAll em tudo que tem no banco, no modelo pessoas.
 
-Com isso é possível reutilizar código, definindo escopos para queries mais utilizadas e refinando estas queries através de palavras-chave como where, include, etc.
+[02:36] Vou modificar o nome, porque agora ele não vai mais pegar todas as pessoas, ele vai pegar todas as pessoas que estão ativas. Eu vou, na verdade, copiar todo esse método pegaTodasAsPessoas, colar embaixo, e comentar por enquanto, porque vamos precisar adicionar outro método para usar o outro escopo que acabamos de criar, o escopo todos.
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+[03:00] O método que chamava pegaTodasAsPessoas agora chama pegaPessoasAtivas, continua recebendo requisição resposta, e a const que é todasAsPessoas que foi criada onde vai receber o retorno vai chamar pessoasAtivas, continua indo na database, continua indo em pessoas. E o findAll não tem modificações, porque agora devido ao escopo padrão, o findAll vai trazer só as pessoas no banco que tem ativo true.
 
- Para deixar a interface mais limpa, o cliente gostaria que na lista de pessoas por padrão fossem exibidos somente os usuários ativos, faz mais sentido para o sistema dele.
+[03:41] Na nossa rota de pessoas vamos ter que alterar também, então vamos no arquivo pessoasRoute. Agora pegaTodasAsPessoas virou pegaPessoasAtivas, e o get() é simples, /pessoas, sem nenhum outro parâmetro.
 
-[00:25] Temos que fazer com que a lista de pessoas seja exibida. Vamos vir no Postman. Já dei um get aqui. Vamos dar um get em pessoas. Ele quer que essa lista que vai ser exibida no front apareça só com os registros que tem ativo true. Por exemplo, o id 4 que o ativo é false não quer que apareça por padrão.
+[04:04] Podemos testar agora, ver se está funcionando. Vamos no Postman, dá um get() em 3000 pessoas, o id 4, que é nosso id que tem ativo falso, continua não aparecendo, por enquanto está tudo ok.
 
-[00:55] Ele quer que todo get que façamos através do método do Sequelize findAll seja feita, podemos dizer, a partir de um determinado escopo. Vamos ver o que o Sequelize tem a dizer para nós sobre escopos.
+[04:22] Agora vamos criar mais um método, vamos voltar em pessoaController para poder usar o outro escopo todos que criamos. Vou descomentar o método pegaTodasAsPessoas que eu tinha deixado comentado, porque agora sim vamos pegar todas as pessoas. O que antes era pegaTodasAsPessoas virou pegaPessoasAtivas, e agora o pegaTodasAsPessoas vai usar o escopo que criamos.
 
-[01:14] A documentação dá alguns exemplos, os escopos são usados para reutilizar código, ou seja, se tem um requisito como esse, eu quero que sempre as queries select sejam exibidas com determinado where, ou determinado include. Esse escopo serve para podermos reutilizar isso.
+[04:46] Onde incluímos, como o sequelize sabe qual escopo ele tem que usar? Na linha onde declaramos o método findAll, que é o método que vai no banco pegar todos os registros, antes dele passamos .scope. Vamos dar um await database.Pessoas.scope(‘todos’).findAll(). findAll aqui não precisa passar nenhum parâmetro porque queremos que ele pegue tudo do banco mesmo.
 
-[01:41] Ele dá alguns exemplos. O escopo por definição é declarado no modelo. Então, se vamos determinar um novo escopo padrão, que ele marca inclusive como escopo padrão, defaultScope, temos que fazer isso no nosso modelo de pessoas. Vou fechar a lista de requisitos, vamos nos modelos, modelo pessoas, porque é aqui nesse modelo que vamos definir onde vai entrar esse escopo padrão e o que vamos ter que declarar nele.
+[05:42] Voltamos em pessoasRoute e criamos uma nova rota get(), para poder pegar todas as pessoas. Vou criar um novo get aqui. Vou passar /pessoas/todos, para ficar o mesmo nome que colocamos no escopo. Em português temos gênero nas palavras, acaba ficando um pouco menos intuitivo do que no inglês.
 
-[02:15] Se voltarmos na documentação, no primeiro objeto dentro do método que aqui estamos usando o define, então sequelize.define é um método e dentro vai o parâmetro. O primeiro parâmetro é o nome do modelo, segundo parâmetro é um objeto grande com todos os atributos desse modelo, nome, ativo, etc, e o terceiro é outro objeto onde estamos colocando opções.
+[06:30] Adicionei uma nova rota get( /pessoas/todos), e o método que vamos chamar nessa rota vai ser pegaTodasAsPessoas. Já podemos testar no Postman, dar um get() em localhost:3000/pessoas/todos, e vamos ver se vem todos os registros, inclusive o 4. Vieram todos, inclusive nosso registro que está ativo false, que é o id 4.
 
-[02:44] Já temos uma opção, que é o paranoid true. Vamos adicionar outra opção depois de paranoid, colocar uma vírgula. Aqui vamos passar o escopo. Primeiro, paranoid true, depois vamos passar um escopo que vamos chamar de escopo padrão, ou seja, de defaultScope.
+[07:06] Quando queremos que o sequelize use um escopo específico passamos o nome desse escopo, o nome que damos como parâmetro do método .scope e já encadeamos com o método que estamos usando o findAll, mas poderia ser qualquer outro, como findOne, por exemplo.
 
-[03:08] Essa é uma propriedade do sequelize. O escopo padrão. O que queremos que aconteça no get() padrão? Vamos passar um where. Quero que todos os meus selects só retornem registros que tenham o atributo ativo, que é uma das colunas do meu banco, true. Ou seja, no caso do nosso projeto, o id 4 da tabela de pessoas que é a Sandra, que o ativo dela é false, não tem que aparecer por padrão, e mais nenhum que seja false também.
+[07:25] Nosso escopo já está definido, já temos o requisito cumprido, inclusive adicionamos um método caso seja necessário passar por cima, digamos assim, desse escopo padrão, e já podemos passar para os nossos próximos requisitos de projeto.
 
-[03:52] Vou salvar. O que fizemos aqui foi passar esse escopo padrão. Agora por padrão o sequelize vai incluir esse where em todas as queries feitas no modelo pessoas. Já podemos vir no Postman e testar nosso get. Agora o id 1, que é a Sandra, não tem que aparecer na lista. Passa direto do 3 para o 5, ou seja, está funcionando. O único registro que temos ativo false não está aparecendo.
-
-[04:21] Se fizermos uma consulta na tabela pessoas usando o terminal do MYSQL, vou dar um use escola_ingles e se der um select * from pessoas, o registro continua no banco, o ativo é 0, 0 é falso, mas o Postman não está trazendo, então está tudo certo.
-
-[05:00] Essa parte teoricamente já está feita, mas pode ser que queiramos em algum momento sobrescrever essa regra. Como faço para sobrescrever um escopo padrão? É o que vamos ver em seguida.
+ DISCUTIR NO FORUM
+PRÓXIM
