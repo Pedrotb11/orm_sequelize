@@ -1,81 +1,50 @@
-//            EXPLICAÇÃO DE USO DE ESCOPO
+//                              OUTROS AGREGADORES !!! 
 
-Durante os últimos vídeos tivemos a oportunidade de ver um pouco como o Sequelize trabalha com escopos e associações. Usando o trecho de código abaixo, podemos afirmar que:
+[00:00] Para finalizar esse requisito, vamos precisar de algo um pouco mais específico, que é contar quantos registros temos da mesma turma, numa matrícula. Se voltarmos no terminal do MYSQL, temos que contar quantas matrículas temos referentes ao mesmo id de turma, então no meu banco, por exemplo, tenho duas confirmadas na turma de id 1, comparar com o número máximo que se pode ter de turmas com matrículas confirmadas, que precisamos passar isso, e exibir só os registros que passem dessa comparação.
 
-   Pessoas.hasMany(models.Matriculas, {
-     foreignKey: 'estudante_id'
-   })
+[00:33] Se uma turma lotada for uma turma com duas matrículas, tenho que exibir só o que passa. Primeiro, vamos criar um método, voltamos no nosso controlador de pessoas, que é onde estamos trabalhando com matrículas, com o modelo de matrículas. Vou copiar o último método, que é o pegaMatriculasPorTurma e vou colar de novo por último para podermos trabalhar em cima.
 
-Alternativa correta
-Os escopos de associação são definidos nas instâncias de um modelo, ao contrário dos próprios escopos de modelo.
+[00:56] Esse método que vamos criar vou passar o nome dele como pegaTurmasLotadas, vai receber requisição e resposta. Vou apagar o que tem no try, para podermos reescrever. O try catch pode deixar. O que vamos passar primeiro? Primeiro temos que passar justamente a quantidade de registros que fazem com que uma turma seja lotada.
 
-Alternativa correta! Se voltarmos ao código, podemos ver que o escopo de modelo é definido dentro do objeto Modelo. Já o de associação está ligado a uma instância desse modelo, como por exemplo Pessoas.hasMany(...).
+[01:25] Então vou criar uma const chamada lotacaoTurma, vou passar um valor como 2, por exemplo. Uma turma com 2 matrículas é uma turma lotada. O método que vamos usar é o mesmo que usamos, é o find and count all, porque o sequelize vai ter que fazer isso mesmo, vai ter que ir no banco, encontrar registros e contar quantos tem.
+
+[02:00] Vou criar uma const turmasLotadas, igual await database.Matriculas.findAndCountAll(), aqui dentro o que vamos passar? Vamos passar de novo um where. Vou jogar para a linha de baixo para ficar mais fácil de ver.
+
+[02:40] O que vamos passar dentro desse where? status: ‘confirmado’, que só queremos que traga as matrículas que têm status confirmado. O retorno já deixo pronto também, res.status(200).json(turmasLotadas), vai devolver o que estiver dentro dessa variável.
+
+[03:08] Se já criarmos uma rota para teste podemos ir vendo o que vamos receber. Vamos em pessoasRoute, mais uma rota do tipo get, então aí ser router.get(‘/pessoas/matricula/lotada’), porque dessa vez não precisamos passar nenhum parâmetro, porque não vou passar qual turma que quero consultar, quero que o banco, o sequelize consulte o banco e traga o que tem de informação sobre turmas lotadas.
+
+[03:42] O segundo parâmetro é o método PessoaController.pegaTurmasLotadas. Já está pronto. Vamos ver o que retornamos aqui no Postman. Vou copiar a rota /pessoas/matricula/lotada, get, vamos ver o que aparece. Ele já trouxe todas as turmas confirmadas e contou quantas turmas têm, lembrando que por enquanto não estamos falando nada de lotação ainda, a única coisa que fizemos no nosso método foi criar uma const que ainda não está sendo usada que passa a lotação de turma.
+
+[04:28] Quantas turmas tenho no banco com registro, com status confirmado? Tenho 4, ele contou para nós. Vamos precisar de mais alguns recursos do SQL, porque vamos precisar agrupar os registros que têm o mesmo valor, ou seja, que tem o valor de confirmado, e contar os registros.
+
+[04:50] Se você já viu um pouco mais sobre queries com SQL vamos precisar de duas palavras-chave que são group e having, que são agrupar e ter. Se tem no SQL, mesma coisa de sempre, vamos na documentação do Sequelize, porque conseguimos bem provavelmente fazer direto com o Sequelize.
+
+[05:11] Na documentação ele tem uma documentação sobre agrupamento, sobre group, então podemos usar o que tem na documentação, que é passar dentro de um objeto a propriedade group e por onde. Vamos no where, embaixo de status confirmado, depois de where.
+
+[05:32] Da mesma forma que fizemos vídeo passado, depois de where vamos passar como segunda propriedade desse objeto, a primeira propriedade é where, o segundo vou passar attributes: [‘turma_id’], e vou passar também uma outra propriedade, que é group: [‘turma_id’].
+
+[06:14] Primeiro, o que estamos fazendo? Passando em attributes só o atributo do modelo que queremos trabalhar, e em seguida falamos qual é o atributo que vamos usar para agrupar, ou seja, junte os resultados checando o valor desta coluna, da coluna turma_id.
+
+[06:35] Vamos ver o que então está acontecendo no Postman. Vou dar um send. Ele já está contando. Está quase lá. Ele está contando, está trazendo a turma_id, count tenho duas matrículas na turma_id já confirmadas. Na turma de id 2 tenho uma e na turma de id 3 tenho outra. E aqui ele está trazendo só os rools que tem turma_id, porque são os atributos que queremos trabalhar. Pedimos para trabalhar só com o atributo turma_id e é só isso que ele está retornando.
 
 
-Alternativa correta
-É possível refinar e incluir novos escopos caso necessário, utilizando a opção scope: { atributo: valor } e dando um nome a este escopo com a opção as: 'nomeDoEscopo'
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Alternativa correta! Como fizemos no vídeo, é possível adicionar um escopo a uma associação e definir um nome pelo qual os métodos serão chamados. Os mixins serão criados a partir deste nome, por exemplo getNomeDoEscopo().
+                                           SEQUELIZE.LITERAL
 
+[07:10] Está quase lá. Ele trouxe a quantidade de registros. Só falta contar e comparar. Aqui vamos precisar fazer uma coisa que foi inédita até agora neste projeto, que é realmente escrever SQL, porque batemos numa coisa que o Sequelize não consegue fazer para nós sem SQL.
 
-Alternativa correta
-O trecho acima não está utilizando nenhum escopo além dos já previstos nos mixins.
+[07:30] Como fazemos para inserir queries de SQL, palavras-chave dentro do Sequelize, do node através do sequelize? Vamos usar um método que chama sequelize.literal.
 
-Alternativa correta! No trecho acima não é definido nenhum escopo, porém os mixins criados na associação entre modelos - por exemplo, Pessoas.getMatriculas(), ficam disponíveis.
+[07:44] A primeira coisa que vamos ter que fazer é vir nas primeiras linhas do controlador de pessoas, porque vamos precisar importar sequelize para poder usar esse método, então const Sequelize = require(‘sequelize’). Agora podemos voltar no método e passar depois de group uma quarta propriedade, que é having, que tem, tendo.
 
+[08:30] E aí, having: Sequelize.literal(‘count(turma_id) >== ${lotacaoTurma}’). O que estou fazendo? Estou pedindo para ele contar quantos resultados de turma_id são maiores, então quantas matrículas de uma certa turma, de um certo id de turma que tem uma quantidade maior do que o número que passei na const lotacaoTurma, que por enquanto eu passei dois.
 
-Alternativa correta
-Os escopos de associação geram alguns métodos (ou mixins) que já fornecem operações comuns de banco, por exemplo Pessoas.getMatriculas(), Pessoas.createMatricula(), Pessoas.countMatriculas().
+[09:35] Vamos testar? Vou voltar no Postman, send, ele não trouxe nada, porque tem que ser maior ou igual, passei dois e ele tem dois registros no banco. Agora deve voltar. Na turma_id de número 1 tenho duas turmas e ele está retornando isso para nós. Ou seja, para fazer esse where alinhado, entre várias aspas, passamos como SQL mesmo, e pedimos para incluir na conta apenas os registros de turma_id, com quantidade de registros maior ou igual do que o inteiro que passamos na const lotacaoTurma.
 
-Alternativa correta! Como vimos do material extra do curso anterior, as associações feitas através dos métodos hasOne(), HasMany(), belongsTo() e belongsToMany() já disponibilizam estes métodos, independente de existir ou não um escopo de associação definido.
+[10:17] Vamos voltar no terminal onde o node está mostrando as queries para nós e vamos mostrar essa query, vamos ver qual foi a query que o Sequelize montou para nós. Ele está agrupando por turma_id tendo um count, está montando exatamente com o que pedimos, ele agrupou por turma_id e podemos ver que ele passou a palavra-chave count do jeito que fizemos para ser incluído na query.
 
+[10:51] O ideal aqui então é devolver esse JSON somente com o count, que é o que queremos. Queremos passar a quantidade de ids que estão lotados. Podemos voltar, se quisermos, e passar em turmasLotadas.count no retorno, ele vai trazer para nós só uma array com a quantidade de turmas que está lotada. Como só temos uma turma, ele só traz um registro, mas vai colocando todos os registros que tiver.
 
-Alternativa errada! Os mixins gerados automaticamente pelo Sequelize já cobrem todas as opções de associação que podem ser feitas entre os modelos.
-
-É possível criar diferentes escopos de associação para, a partir deles, o Sequelize gerar os métodos que precisamos.
-
-//                              FUNÇÕES AGREGADORAS !!!
-
-https://sequelize.org/master/manual/model-querying-finders.html
-
-[00:00] Partindo então para a próxima solicitação do cliente, a última que fizemos foi fazer uma espécie de filtro de data utilizando ordenadores e datas que recebíamos por query, esse já está feito. O próximo é que o cliente quer poder consultar as matrículas por turma e saber quais delas estão lotadas para organizar melhor as matrículas.
-
-[00:20] Supondo que passemos um número, por exemplo, a partir de quatro estudantes uma turma está lotada, precisamos voltar a isso do banco para o sistema. Vamos pensar primeiro no primeiro caso, o cliente quer poder consultar as matrículas por turma. Vamos ver isso primeiro.
-
-[00:40] Vamos então no controlador de pessoas. No controlador de pessoas porque é neste controlador que estão sendo escritos os métodos de matrícula, porque o que temos que consultar, se voltarmos no diagrama de banco, é a tabela matrículas e ver quantas matrículas tenho em uma turma através da coluna turma_id, que é a coluna que liga a tabela de turmas com a tabela de matrículas.
-
-[01:05] O último método do nosso pessoaController é o pegaMatriculas, vou copiar ele e colar por último o método para reaproveitarmos um pouco do que já escrevemos. Vou chamar esse novo método de pegaMatriculasPorTurma. E o que vamos precisar receber dos parâmetros? Vamos precisar receber turmaId, porque, queremos checar quantas matrículas tenho por id de turma.
-
-[01:35] Vou apagar por enquanto tudo que está dentro do try, porque vamos escrever novamente. E como fazemos isso? Eu poderia usar só um findAll, por exemplo, database.Matriculas.findAll, e passo o findAll, ele traz todos os registros, passo dentro do where o turma_id, ele traz todos os registros que tem com aquela turma na tabela de matrículas, e posso deixar o front fazer essa contagem de registros.
-
-[02:11] Eu posso, mas não é a melhor prática, uma vez que o SQL tem recursos para fazer esse tipo de operação, e ele faz de forma mais performática. Então, já que o SQL oferece recursos para fazermos contagem de registros, soma de registros, etc, vemos se o sequelize tem alguma coisa parecida.
-
-[02:28] Ele tem. Na verdade, o que queremos é um método tipo find, um método encontrador, além dos que já usamos. Usamos o findAll, usamos o findOne, além disso tem o findByPk, que encontra por uma chave primária, e tem o findOrCreate, se você precisar de algum registro que seja único, por exemplo, um id, checa se tem um id ou username no banco, se não tiver ele cria.
-
-[02:52] E temos um que parece promissor, que chama findAndCountAll, encontre e conte todos. Esse parece que vai ser bom para nós. Vamos aproveitar no nosso método. Vou voltar onde começamos a escrever o método pegaMatriculasPorTurma, vou criar uma const para salvar os resultados que vamos trazer do banco, vou chamar de todasAsMatriculas, ela vai ser await database.Matriculas.findAndCountAll, esse é o método que vamos usar.
-
-[03:38] O método findAndCountAll vamos passar um where para ele como parâmetro, para podermos dizer para ele que queremos que ele veja tais turmas, etc. Dentro do where, o que temos que passar primeiro no findAndCountAll? A primeira coisa que vamos ter que passar é, vou abrir um objeto, a propriedade where, o valor dela é um outro objeto onde passamos o que queremos colocar no onde, no where.
-
-[04:05] O primeiro vai ser turma_id, porque turma_id é nome da coluna lá no diagrama de banco, e o que vou passar no turma_id? Vai ser number, para converter para número, turmaId, e esse turmaId é o turmaId que estamos recebendo dos parâmetros.
-
-[04:26] Vou passar mais uma coisa nesse where. Vou passar status: ‘confirmado’. O que é esse status confirmado? Se voltarmos no diagrama de banco, status é uma outra coluna na tabela matrículas, e ele recebe uma string confirmado ou cancelado, porque o cliente quer que tragamos todas as matrículas que estão confirmadas em determinada turma, então não podemos nos esquecer dessa parte.
-
-[04:55] A última coisa que vou colocar é um return, para podermos mandar esses dados para a frente. Então, return res.status(200).json(todasAsMatriculas). Agora esqueci de adicionar uma rota para esse teste, então vamos na pasta de rotas, na rota de pessoas, vai ser uma rota do tipo get, então router.get (‘/pessoas/matricula/:turmaId/confirmadas’, PessoaController.pegaMatriculasPorTurma).
-
-[06:16] Vou copiar essa rota para testarmos ela no Postman. Vamos lá no Postman, get localhost:3000/pessoas/matricula/, preciso passar um id de turma. Vamos dar uma olhada no terminal do MYSQL para ver o que podemos colocar como teste. Vou pedir então select * from Matriculas.
-
-[06:50] Na turma 1, no meu banco, que o de vocês pode estar um pouco diferente, tenho duas matrículas confirmadas na turma de id 1, do estudante 1 e do estudante 2. Vamos no Postman dar um get e ver se ele vai retornar na turma 1, que é a turma que tem duas matrículas confirmadas.
-
-[07:20] pessoas/matricula/1/confirmadas. Ele me trouxe as duas matrículas, a matrícula de id 1 e de id 2, ambas referentes à turma 1. Id de estudante 1, e id de estudante 2. Olha que interessante, olha o que o JSON está retornando para mim. Ele está retornando um objeto com duas propriedades. A primeira chama count, e ela tem um valor número de 2, e a segunda chama rows, de linhas, e o valor dela é uma array contendo os resultados que bateram com o where.
-
-[07:52] Ele primeiro conta todos os registros, ele contou, trouxe para nós que são dois registros, e em seguida ele trouxe um array com esses registros. Podemos voltar no nosso método para fazer um teste e pedir para o JSON retornar todas as matrículas .count. Aí vamos no get de novo no Postman. Ele trouxe só o valor que tem dentro de count.
-
-[08:16] Também podemos adicionar como parâmetro do findAndCountAll algumas outras opções. Vou adicionar duas para testar. Uma que é o limit. O limit é bem útil para fazer paginação. Podemos limitar a quantidade de registros que são trazidos por vez do banco.
-
-[08:37] Não vou colocar 20, que é o mais padrão, porque só temos dois registros no banco. Vou colocar um registro só para testarmos. Vamos voltar ao Postman, vou dar um send de novo aqui. No count ele contou que tem dois registros, mas ele trouxe na array de resultados só um, só o primeiro.
-
-[08:58] Podemos usar o limit quando tivermos vários registros e quisermos limitar a quantidade de registros que vêm de uma vez. Vou deixar 20 só para ter guardada essa opção. E uma outra opção que podemos trazer também é ordenar, order. Com order ordenamos os resultados. Passamos a forma como queremos ordenar dentro de duas arrays e vou passar aqui dentro, no primeiro índice, a coluna que quero ordenar, pela qual quero ordenar. Vou ordenar por estudante, estudante_id é a coluna que quero usar para ordenar.
-
-[09:33] O outro índice dessa array é se quero ordenar de forma ascendente ou descendente. Se colocar as letras ASC vou ordenar por ordem ascendente. No meu retorno não vai fazer diferença, porque estudante 1 e estudante 2 estão logo em seguida um do outro. Mas se eu trocar por DESC e pedir os resultados de novo no Postman, ele trocou, primeiro traz o estudante de id 2 e depois o de id 1.
-
-[10:05] Já vimos como utilizamos alguns outros métodos do tipo finder, e como podemos passar algumas outras opções além do where para organizar melhor os resultados que mandamos para frente, que trazemos com a nossa API.
+[11:20] Agora já sabemos como fazer para incluir, fazer contagem de registros, e também como incluir literais do SQL dentro do sequelize para fazer coisas um pouco mais complexas.

@@ -1,4 +1,5 @@
 const database = require('../models')
+const Sequelize = require('sequelize')
 
 class PessoaController {
     static async pegaPessoasAtivas(req, res) {
@@ -178,6 +179,23 @@ class PessoaController {
             })
             return res.status(200).json(todasAsMatriculas) // se colocar "todasAsMatriculas.count" ele retorna apenas a contagem
 
+        } catch (error) {
+            return res.status(500).json(error.message)
+        }
+    }
+
+    static async pegaTurmasLotadas(req, res) {
+        const lotacaoTurma = 2
+        try {
+            const turmasLotadas = await database.Matriculas.findAndCountAll({
+                where: {
+                    status: 'confirmado'
+                },
+                attributes: ['turma_id'], //E aqui ele está trazendo só os rools que tem turma_id, porque são os atributos que queremos trabalhar. 
+                group: ['turma_id'], // Pedimos para trabalhar só com o atributo turma_id e é só isso que ele está retornando.
+                having: Sequelize.literal(`count(turma_id) >= ${lotacaoTurma}`)
+            })
+            return res.status(200).json(turmasLotadas.count)
         } catch (error) {
             return res.status(500).json(error.message)
         }
