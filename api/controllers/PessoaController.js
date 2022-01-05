@@ -163,6 +163,26 @@ class PessoaController {
         }
     }
 
+    static async pegaMatriculasPorTurma(req, res) {
+        const { turmaId } = req.params
+        try {
+            const todasAsMatriculas = await database.Matriculas.findAndCountAll({
+                where: {
+                    turma_id: Number(turmaId),
+                    status: 'confirmado'
+                }, //O primeiro vai ser turma_id, porque turma_id é nome da coluna lá no diagrama de banco, e esse turmaId é o turmaId que estamos recebendo dos parâmetros.
+                limit: 20, //limita a quantidade de registros retornados mas não altera o contador. OPCIONAL.
+                order: [ //OPCIONAL, apenas para conhecer.
+                    ['estudante_id', 'DESC']
+                ]
+            })
+            return res.status(200).json(todasAsMatriculas) // se colocar "todasAsMatriculas.count" ele retorna apenas a contagem
+
+        } catch (error) {
+            return res.status(500).json(error.message)
+        }
+    }
+
 }
 
 module.exports = PessoaController
