@@ -1,35 +1,88 @@
-//                    OPERAÇÕES EM DOIS MODELOS 
+//                       USANDO TRANSAÇÕES (ROLLBACKS)
 
-[00:00] De volta então aos requisitos, o último que trabalhamos foi agrupar matrículas por turma e saber se a turma está lotada ou não. Esse já fizemos. O próximo e último, o cliente gostaria que uma vez que o cadastro de estudante fosse desativado, todas as matrículas relativas a este estudante automaticamente passassem a contar como canceladas.
+[00:00] O que são transações então? As transações servem para garantir a integridade dos dados em operações como esta que fizemos. Por exemplo, uma operação que acesse mais de uma tabela, acesse várias tabelas, ou que faça atualizações em várias linhas de uma tabela.
 
-[00:22] Como assim? Vamos dar uma olhada no terminal do SQL na tabela pessoas. Então, select * from pessoas, todas as pessoas têm uma coluna nessa tabela ativo que recebe true ou false. Tenho alguns estudantes que estão com 0 e outros com 1 que estão ativados ou desativados no sistema.
+[00:16] Se acontece qualquer erro nesse processo, qualquer erro de banco, e temos uma falha em qualquer parte dessa operação, nenhum dado é salvo, nenhum dado é atualizado no banco, na realidade, e o banco volta para o ponto onde ele estava antes de tudo isso começar, antes de todas as operações que passamos começarem.
 
-[00:47] O que o cliente quer? Que toda vez que passemos um estudante de ativo true para ativo false em pessoas, automaticamente todos os registros relativos a este id de pessoas que estejam na tabela matrículas, então se viermos em select * from matrículas, na coluna estudanteId é a coluna que está fazendo a relação entre essas duas tabelas.
+[00:40] Quando temos que voltar o banco para o estado anterior chamamos de rollback. Então, a transação ou dá certa e é commitada, ou ela não dá certo e é feito o rollback. A documentação do sequelize sobre transações dá alguns exemplos, mostra algumas formas de implementar transações.
 
-[01:22] Se cancelamos, colocamos ativo false no estudante de id 1, onde na tabela matrículas está como 1, tudo que tem status confirmado, que é outra coluna que recebe cancelado ou confirmado, tenho automaticamente que passar para cancelado. Cancelou a pessoa na tabela pessoas, cancelou a matrícula na tabela de matrículas.
+[01:00] O que vamos fazer agora é utilizar o método sequelize.transaction, e esse método recebe como parâmetro um call-back, e dentro desse call-back vamos fazer todas as operações de banco que queremos que sejam, digamos assim, gerenciadas pela transação.
 
-[01:48] Vamos então escrever um método para isso no controlador de pessoas, que é o controlador onde estamos cuidando das nossas matrículas. Vou no final do método fazer o que temos feito das outras vezes, copiar o último método para reaproveitarmos um pouco de código, “Ctrl + C”, “Ctrl + V”, vou chamar esse método de cancelaPessoa, que vai receber requisição e resposta.
+[01:18] Além de ser passado esse call-back e fazermos tudo dentro dele, vamos passar também um terceiro parâmetro em cada um dos métodos de banco que vamos usar, passando que ele tem que ser gerenciado por uma transação, que na documentação está sendo chamada de T. Podemos dar o nome que quisermos, T é só o nome do parâmetro que ele está passando.
 
-[02:15] O que temos que passar como parâmetro para conseguirmos fazer isso acontecer? Vou passar o id de estudante, porque é a partir do cancelamento de estudantes que vou sair da tabela pessoas e ir percorrer a tabela matrículas procurando o estudante_id que for de número x.
+[01:40] O que já escrevemos é bem parecido, só vamos fazer algumas alterações no método cancela pessoas para incluir uma transação. Dentro do try, a primeira coisa que vamos fazer é chamar database.sequelize.transaction, ela vai ser async e vamos passar o argumento, vou chamar o argumento ao invés de T, como está na documentação, de transação.
 
-[02:36] Então, const {estudanteId} = req.params, como temos feito nos outros métodos, vamos receber isso por parâmetro da requisição. Vou apagar tudo que tem no try até antes do retorno, porque vamos reescrever.
+[02:11] Abro e fecho chaves. Aqui dentro tem que acontecer o que? Fazer o primeiro update na tabela pessoas, fazer o segundo update na tabela matrículas e o retorno. Vou jogar isso tudo para dentro do call-back. O argumento que estamos passando transação ainda não está sendo utilizado, temos que passar isso como terceiro parâmetro de cada um dos métodos, então update, o primeiro parâmetro é o que vai ser alterado, segundo parâmetro é where, terceiro parâmetro é outro objeto que vamos passar transaction: transacao, que é o nome da transação que estamos usando.
 
-[02:55] O que temos que fazer aqui? Vamos em um método só ter que acessar duas tabelas através dos seus modelos e fazer alterações nela, fazer updates. Então vamos começar por pessoa, await database.Pessoas.update, que vai ser o método do sequelize que vamos usar.
+[02:52] Esse fizemos no primeiro update, update de pessoas, o segundo update a mesma coisa. Passamos como terceiro parâmetro transaction: transacao, e agora todas as operações de banco que estão sendo feitas nesse método estão dentro de sequelize.transaction, e já podemos testar na rota.
 
-[03:16] O que o método update tem que receber por parâmetro para funcionar? Primeiro ele tem que receber as informações que vão ser atualizadas, que vão ser updated, e depois ele tem que receber um where para saber onde tem que atualizar. Quando usamos o update para atualizar matrículas e atualizar pessoas, recebemos o conteúdo, as informações para fazer a atualização através do corpo da requisição.
+[03:11] Dentro da tabela matrículas criei mais alguns registros para testar referentes a estudanteId 4 e estudanteID 5. No Postman aproveitamos a mesma rota que já tínhamos criado, já estava funcionando, localhost:3000/pessoas/4/cancela, vou dar send, e vamos ver o que vai acontecer.
 
-[03:42] Dessa vez não precisamos fazer isso, porque é sempre a mesma informação que vai mudar, podemos passar ela como parâmetro mesmo. No caso de database.Pessoas temos que modificar a coluna de ativo true para ativo false. Toda vez que chamar o método cancelaPessoa, o primeiro parâmetro vai ser o que vai ser a informação a ser atualizada, vai ser sempre ativo igual a false, que aí passamos no objeto e ele já atualiza no registro.
+[03:33] Matrículas referentes a estudante 4 canceladas, ok, porque não fizemos nenhuma alteração. Se chamarmos com select * from matrículas os registros referentes a id 4 estão como cancelados, mas o importante agora é ir no outro terminal, onde o nodemon está mostrando as queries para nós e ver o que aconteceu.
 
-[04:16] E o segundo é o where, onde vamos passar onde vamos atualizar, então where: {id: Number(estudanteId)}}), essa é a primeira atualização que vamos fazer, vamos atualizar duas tabelas. A segunda é a tabela de matrículas, vamos acessar o modelo matrículas, await database.Matriculas.updated({ativo: false}, {where {id: Number(estudanteId)}}, é a mesma coisa da tabela de pessoas, não precisamos receber as alterações que vão ser feitas no registro através de parâmetro, porque é sempre a mesma alteração que vai ser feita.
+[03:55] Agora a query, a primeira linha dela, é uma palavra, um termo start transaction. Ou seja, agora ele começa, a query começa abrindo uma transação, executou o primeiro update de pessoas, executou o segundo update em matrículas, deu tudo certo, ele fecha com a palavra commit, ou seja, abri uma transação, fez todas as alterações, as alterações deram certo, vamos commitar essa transação e aí sim modificar tudo no banco. Significa que deu tudo certo, commitou tudo.
 
-[05:20] O que temos que alterar? Temos que alterar para status: ‘cancelado' e é sempre isso que vamos passar para a linha que vamos alterar. Onde vamos alterar? Temos que alterar em estudante_id, porque é a coluna na tabela matrículas que relaciona com id da tabela pessoas. O que vamos receber como valor é Number(estudanteID), porque estudanteID que está sendo recebido é o parâmetro da requisição.
+[04:30] Vamos testar isso de novo. Vou passar no código alguma informação para forçar um erro. No database.matriculas, esse where estudanteId, vou trocar a variável estudanteId onde ele está recebendo número por x, só para passarmos um erro, dar uma forçada em um erro.
 
-[05:55] Os métodos update não retornam JSON, eles retornam sempre 0 ou 1, de aconteceu ou não aconteceu. No nosso JSON de retorno podemos só passar uma mensagem, então message: ‘matriculas ref. estudante ${estudanteId} canceladas. Sem esquecer a rota para fazer o teste.
+[04:52] Vou voltar no Postman e tentar alterar pessoas 5, cancela, vamos dar um send. Ele já vai dar um erro. Vou cancelar essa requisição, porque ele vai ficar tentando, mas vamos voltar no terminal do nodemon e ver o que aconteceu na query. A query começa, abre uma transação, executa o update em pessoas, porque até chegar por enquanto em update pessoas está tudo ok, não viu erro aqui, executou, mas quando foi para o update de matrículas, o que aconteceu? Ele viu um erro e rollback, não aconteceu nada no banco.
 
-[06:35] Vamos em pessoas.route, essa vai ser uma rota do tipo post, não é uma rota do tipo put, então post(‘/pessoas/estudanteId/cancela’, PessoaController.cancelaPessoa), vamos testar no Postman essa rota. Essa é uma rota do tipo post, localhost:3000/pessoas/estudanteId, não esquecer dos dois pontos na rota para sabermos que isso é um parâmetro.
+[05:28] Vamos testar para ver se não aconteceu realmente nada no banco. Vamos voltar no terminal do MYSQL, pedir para mostrar matrículas, e todos os registros de estudante 5 continuam como confirmados, ou seja, o rollback funcionou, nada foi alterado no banco. Vou dar "Ctrl + Z" no nosso método para tirar o erro que forcei.
 
-[07:26] Vou passar 1, porque o estudante 1 tem alguns registros que coloquei na minha tabela de matrículas, para testarmos, e estudante de id 1 tem cinco registros como confirmados em turmas diferentes. Vamos testar com estudante 1 e ver se está funcionando.
+[05:52] Ou seja, agora todas as operações de banco um pouco mais complexas, que fazem várias alterações em várias partes, estão gerenciadas e seguradas por uma transação que vai impedir que qualquer erro de execução mande para o banco alterações, atualizações parciais, que isso é uma coisa que nunca queremos, queremos consistência dos nossos dados.
 
-[07:46] A mensagem veio, matrículas referentes a estudante 1 canceladas. Vamos no banco pegar a tabela atualizada. Todos os registros referentes a estudante id 1 cancelado. E se voltarmos na tabela pessoas nosso estudante 1 agora tem ativo false, ativo 0 na tabela de pessoas.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-[08:14] Aqui está feito, basicamente já cumprimos o requisito, mas o que acontece se der qualquer problema no banco enquanto tudo isso é feito? Ele atualiza uma tabela, atualiza tudo? Para de atualizar? Bota uma mensagem? É aí que entra o que vamos ver agora, que são as transações.
+Como vimos, é muito importante garantir a integridade dos dados que são inseridos ou alterados no banco. Conforme um projeto cresce em complexidade, também ficam mais complexas as operações feitas na base de dados a cada interação - por exemplo, quando fazemos uma compra online ou postamos algo em uma rede social.
+
+Sobre transações, é possível afirmar que:
+
+
+Alternativa correta
+Transações servem para garantir a consistência dos dados em um banco; no fim de cada transação, todos os dados devem estar em um estado consistente.
+
+Alternativa correta! Uma transação sempre mantém o banco em um estado válido/consistente, o que inclui dados válidos (de acordo com as restrições) e impede registros incorretos no banco; por exemplo, uma tabela não pode ter FKs que não existam na tabela de origem da chave.
+
+
+Alternativa correta
+O ideal é utilizar transações para todas as operações que fazemos no banco.
+
+No caso de queries SELECT e de alterações únicas no banco - por exemplo, uma inclusão em somente uma tabela, não há necessidade de se implementar transações. Em operações mais complexas, como alterações ou inserções que envolvam mais de uma tabela e/ou campos, elas se tornam necessárias para garantir que todas as operações envolvidas sejam ou finalizadas com sucesso, ou revertidas.
+
+
+Alternativa correta
+O gerenciamento de transações pode ser feito pelo Sequelize através do método .transaction().
+
+Alternativa correta! O Sequelize por definição não inclui transações nas operações de banco; elas devem ser implementadas conforme necessário.
+
+
+Uma transação é uma única operação e deve ser completada com todas as modificações de dados, ou nenhuma modificação é feita.
+
+Alternativa correta! O princípio da transação é garantir que todas as alterações nos dados sejam integralmente efetuadas (e concluídas com COMMIT) ou todos os dados envolvidos serão revertidos para o estado anterior (o chamado ROLLBACK).
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+O Sequelize não implementa transações nas queries por padrão; mas é muito aconselhável que você as utilize, especialmente em produção.
+
+Existem duas formas de fazer isso utilizando os métodos do Sequelize: a primeira é utilizando transações não gerenciadas (unmanaged transactions), onde quem está desenvolvendo é responsável por chamar os métodos apropriados de rollback e commit:
+
+const transacao = await sequelize.transaction();
+
+try {
+  const personagem = await Personagem.create({
+    nome: 'Bart',
+    sobrenome: 'Simpson'
+  }, { transaction: transacao });
+  await personagem.addParente({
+    nome: 'Lisa',
+    sobrenome: 'Simpson'
+  }, { transaction: transacao });
+  await transacao.commit();
+} catch (error) {
+  await transacao.rollback();
+}
+
+No exemplo acima (da própria documentação do Sequelize) os métodos t.commit() e t.rollback() foram adicionados manualmente.
+
+A outra forma, como fizemos no vídeo, foi utilizando transações gerenciadas (managed transactions) onde toda a operação a ser feita no banco é passada como callback do método sequelize.transaction(). Nesse caso, e como foi feito no código do nosso projeto, não há a necessidade de adicionar manualmente os métodos t.commit() e t.rollback().
+
+Segue o link para a documentação do Sequelize sobre transações.

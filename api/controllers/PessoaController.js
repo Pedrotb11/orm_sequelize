@@ -204,12 +204,18 @@ class PessoaController {
     static async cancelaPessoa(req, res) {
         const { estudanteId } = req.params
         try {
-            await database.Pessoas
-                .update({ ativo: false }, { where: { id: Number(estudanteId) } }) //O que o método update tem que receber por parâmetro para funcionar? Primeiro ele tem que receber as informações que vão ser atualizadas, que vão ser updated, e depois ele tem que receber um where para saber onde tem que atualizar.
-            await database.Matriculas
-                .update({ status: 'cancelado' }, { where: { estudante_id: Number(estudanteId) } })
+            database.sequelize.transaction(async transacao => {
+                await database.Pessoas
+                    .update({ ativo: false }, { where: { id: Number(estudanteId) } }, {
+                        transaction: transacao
+                    }) //O que o método update tem que receber por parâmetro para funcionar? Primeiro ele tem que receber as informações que vão ser atualizadas, que vão ser updated, e depois ele tem que receber um where para saber onde tem que atualizar.
+                await database.Matriculas
+                    .update({ status: 'cancelado' }, { where: { estudante_id: Number(estudanteId) } }, {
+                        transaction: transacao
+                    })
 
-            return res.status(200).json({ message: `matriculas ref. estudante ${estudanteId} canceladas` })
+                return res.status(200).json({ message: `matriculas ref. estudante ${estudanteId} canceladas` })
+            })
         } catch (error) {
             return res.status(500).json(error.message)
         }
