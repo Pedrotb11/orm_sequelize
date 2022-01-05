@@ -1,43 +1,33 @@
-[00:00] Vamos ver o próximo requisito da nossa lista. O último que lidamos foi a respeito de falhas de validação, que já está ok. O próximo que temos que tratar agora é que o cliente achou importante poder consultar todas as matrículas confirmadas referentes a um estudante de id X, de forma rápida.
+//                                  USANDO MIXINS 
 
-[00:18] Vamos pensar então em como fazemos isso. A primeira coisa que me ocorre é ir direto no controlador de pessoas e criar um método novo para isso. Podemos aproveitar o método apagaMatricula, que vai ser um pouco parecido. Vou copiar todo o método apagaMatricula, vou colar ele no final da classe pessoaController.
+[00:00] Acabamos de ver que é possível definir escopos na associação entre modelos. O Sequelize gera alguns métodos automaticamente a partir desses escopos. Na documentação dele, ele mostra que no caso, por exemplo, de usuario.hasManyProjects, então usuário tem muitos projetos, ele cria automaticamente alguns métodos, por exemplo, getProjects, e também mais alguns que vou deixar na documentação para vocês.
 
-[00:45] Esse método vai chamar pegaMatriculas, ao invés de apagaMatricula. Vai receber requisição e resposta. O que vamos receber aqui então nos parâmetros da requisição? Vai ser o id de estudante. Vai ser estudanteId, porque a partir do id de estudante é que vamos pedir lá na tabela de matrículas para ele filtrar todas as matrículas referentes a um estudante.
+[00:30] Isso é ótimo porque ele reduz a quantidade de código que teríamos que escrever do zero para fazer algumas queries. Vamos usar um desses métodos, também chamamos eles de mixins, para consultar todas as matrículas confirmadas referentes a um estudante de id X.
 
-[01:08] Dentro do nosso try vamos acessar database.Matriculas.findAll, e dentro do findAll vamos passar um where. Nesse where vai ter estudante_id e o valor dele vai ser o valor que vamos trazer do parâmetro da requisição, que é estudanteId.
+[00:44] No controlador de pessoas onde já tínhamos começado a escrever o método pegaMatriculas, vamos adicionar então um desses métodos prontos. Só que aqui, ao invés de consultar a tabela de matrículas vamos fazer um pouco diferente. Vou apagar a linha onde criamos essa const matrículas e vou criar uma nova const, vou chamar de pessoa, e await.
 
+[01:16] O que vamos consultar? Pessoas. Então database.Pessoas.findOne({where: {id: Number(estudante_id)}}). Por enquanto é tudo que vimos no curso anterior. E aí após fazer isso precisamos pegar todas essas matrículas, precisamos fazer com que o sequelize percorra o banco e traga todas as matrículas confirmadas desse estudante.
 
-////////////////////////////////////////////////////////////////
+[02:15] Então vamos criar uma const matriculas = await pessoa, que é o retorno do findOne, que fomos no modelo pessoas. E olha o que vamos fazer. Vamos usar um método que chama getAulasMatriculadas, abro e fecho parênteses. O retorno desse await vai ser matrículas.
 
-[01:30] O que é esse estudante_id que estamos declarando no where? Vamos voltar no diagrama de banco que usamos para criar nossas tabelas. Estudante_id é uma coluna da tabela matrículas, é a coluna que liga a tabela matrículas à tabela pessoas através de uma chave estrangeira. Seria algo nessa linha, ele retornaria ao invés de uma mensagem um JSON com valor de matrículas, então aqui eu teria que criar uma const, que vou chamar de matrículas, para guardar os resultados desse findAll, e o JSON do retorno traria o conteúdo dessa variável matrículas.
+[02:52] O que é esse getAulasMatriculadas? Vamos voltar no modelo pessoas, aulasMatriculadas é o nome que demos para o escopo. Esse é um comportamento que vemos em ORMs em geral, não é somente no sequelize. É a criação de métodos get, set, create, etc, a partir dos modelos e das associações.
 
-////////////////////////////////////////////////////////////////
+[03:12] Aqui estamos utilizando um desses métodos que o Sequelize cria automaticamente para nós. Ele pegou aulas matriculadas, que é o nome que definimos no escopo de associação, e criou automaticamente esse método, esse mixin, chamado getAulasMatriculadas, que como o próprio nome diz vai pegar todos os registros que estão de acordo com o escopo que passamos na associação que fizemos dentro do modelo pessoas, ou seja, tudo que tiver status confirmado.
 
+[03:40] Então vamos criar uma rota para testar se está tudo ok. Vamos abrir nosso arquivo de pessoasRoute, criar uma nova rota do tipo get. Vou organizar essas rotas todos os gets juntos, porque acho que fica mais organizado, e todos os puts, deletes, tudo junto, vou deixar mais organizado.
 
-[02:18] Essa é uma forma de fazer. Mas tem outro jeito de fazer isso sem ficar passando where no findAll? Tem. A partir de um recurso que chamamos de escopo de associação. Se voltarmos no modelo pessoas, lembrando do curso anterior, nos modelos definimos algumas associações. Vamos ver como está essa parte de associações que é logo depois do código que escrevemos para definir os atributos do modelo e etc.
+[04:05] Vamos criar uma nova rota do tipo get, o primeiro parâmetro que vou passar é o endpoint, que vai ser pessoas/:estudanteId/matricula, e o segundo parâmetro é o método que vamos chamar nessa rota, que é PessoaController.pegaMatriculas. Vamos no Postman testar essa rota.
 
-[02:52] No modelo pessoas temos duas associações que já deixamos feitas, já trouxemos feitas do curso anterior. Tem pessoas.hasMany, que é uma associação de um para muitos de pessoas para turmas. E pessoas.hasMany, que é uma associação de pessoas com matrículas.
+[04:42] Vou copiar ela para não precisarmos escrever e vamos fazer um teste com o estudante de id 1, por exemplo. Vou em get no Postman, pessoas/1/matricula. Vamos ver se ele me retorna alguma coisa.
 
-[03:11] Por enquanto está dessa forma. A associação da tabela pessoas no modelo pessoas com turmas é a partir da coluna docente_id, e de pessoas com matrículas é através da coluna estudante_id, que foi a coluna que vimos no diagrama de banco.
+[05:05] Ele retornou uma matrícula, só trouxe os registros do estudante 1 que tem status confirmado. É o id 1, o id de matrícula referente ao estudante id 1 que foi o estudante que buscamos.
 
+[05:16] Como sabemos que isso está certo? Podemos vir no terminal onde o node está exibindo as queries. Vou aumentar um pouco o texto. E olha a query que está sendo executada. No final da query dá para ver que ele procura todas as matrículas onde deletedAt é null, que já fizemos o soft delete, ele está buscando isso também, onde matriculas.status é igual a confirmado e matriculas estudante_id é igual a 1.
 
-////////////////////////////////////////////////////////////////
+[05:50] Se voltarmos no terminal do MYSQL e pedirmos para ele fazer um select * from matrículas, e pedir para ele exibir para nós, vamos ver que o estudante_id tem uma outra matrícula. No seu banco você pode ter feito outras inserções, pode estar um pouco diferente, mas no meu banco tenho outro registro no id 5 que se refere também ao estudante de id 1, mas ela está cancelada. Então o Postman não trouxe para mim essa matrícula, está tudo certo.
 
-[03:30] Podemos a partir daí passar uma instrução nessa parte falando que já que esses dois modelos estão associados, conseguimos fazer eles se cruzarem? Por exemplo, uma função do tipo cruzar matrículas com pessoas, etc? Sim, conseguimos. Para fazer isso que servem justamente os escopos de associação.
+[06:38] Dá para usar também esses métodos automáticos sem passar nenhum escopo para eles? Dá sim. Os mixins são criados a partir das associações. Todas as associações que fazemos nos modelos, e temos associações nos nossos quatro modelos do projeto, eles criam automaticamente esses métodos e são super úteis para usar com o escopo, mas pode ser usado também sem eles.
 
-[03:52] Na documentação do Sequelize ele tem a parte de escopo de associação, é similar ao que fazemos anteriormente no escopo de modelo, só que aqui ao invés de definirmos o escopo dentro do próprio modelo, como fizemos anteriormente, se voltarmos um pouco no código, dentro do método define, que é o método onde definimos o modelo, passamos o nome dele e em seguida um objeto com os atributos, é dentro aqui desses parâmetros que passamos o escopo de modelo.
+[07:02] Vamos tirar o escopo. Vou só comentar a lista onde passamos o escope e o objeto com status confirmado, só para testar e ver se está funcionando. Podemos voltar no Postman, fazer a mesma requisição, e ele traz as duas matrículas referentes a estudante id 1, tanto a confirmada quanto a cancelada.
 
-[04:25] O escopo de associação definimos no trecho do código onde justamente declaramos todas as associações que são feitas com esse modelo. Vamos escrever para entender melhor o que está acontecendo. O que queremos associar é uma associação de pessoas com matrículas. Logo depois que escrevo foreignKey: estudante_id vou adicionar mais duas propriedades nesse objeto.
-
-[04:50] A primeira propriedade vai ser scope, de escopo mesmo, o valor dela é um objeto. Dentro desse objeto vou passar justamente o escopo. Qual é o escopo dessa associação que quero fazer? É status confirmado.
-
-[05:07] O que é status confirmado, só lembrando? Se voltarmos no diagrama de banco, status é uma coluna da tabela matrículas e ele recebe confirmado ou cancelado. Como queremos nesse caso só filtrar os registros que tiverem status confirmado, passamos ele no escopo, e vamos passar outra propriedade, que é as, e ela vai ter um valor que vou passar como string que é o nome que quero dar para esse escopo também.
-
-[05:34] Vou dar para esse escopo o nome de aulasMatriculadas. Então, pessoas nesse trecho de código, pessoas.associate é uma instância do modelo pessoas que foi definido um pouco acima do código, a partir da linha 3.
-
-[06:00] O que acabamos de fazer é adicionar um escopo de associação passando duas informações. A primeira é o escopo que queremos trabalhar, que na verdade é a condição que vai ser passada no where quando o sequelize montar o array para nós, e em segundo o nome que queremos usar. E vamos usar esse nome para chamar esses tais métodos automáticos que fiquei me perguntando se o sequelize tem.
-
-////////////////////////////////////////////////////////////////
-
-
-[06:25] Vamos usar alguns desses métodos que ele cria para nós. Os nomes desses métodos são mixins. Também tem na documentação, vou deixar para vocês, como alguns casos de usos desses tais métodos que o Sequelize cria para nós a partir das associações. Vamos lá fazer esse escopo funcionar no controlador de pessoas.
+[07:25] O requisito de ter uma rota que traga todas as matrículas confirmadas a respeito de certo estudante, estudante x, já está feita. Vou tirar o comentário porque o escopo está valendo, e já podemos passar para o próximo requisito do nosso projeto.
