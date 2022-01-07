@@ -1,29 +1,105 @@
-//                           FINALIZANDO OS SERVIÇOS
+//                           INICIO DO PROJETO E CONFIGS DO AMBIENTE
 
-[00:00] Fez o desafio de tentar separar os métodos dos controladores e dos serviços? Eu fiz o meu, vamos dar uma olhada em como ficaram algumas coisas depois dessa refatoração. A primeira coisa que eu já queria mostrar é que para manter a organização de ter somente um controlador acessando seu próprio serviço, decidi por separar os métodos que acessavam o modelo matrículas, no próprio controlador de matrículas.
+[00:00] O servidor está rodando, mas ainda temos um pequeno problema. Qualquer alteração que eu faço no código; por exemplo, mudar o número da porta de 3.000 para 3.500 e salvar. O servidor não enxergará essas alterações. Eu terei de derrubá-lo toda vez e subir de novo para ele ver que teve alterações no arquivo.
 
-[00:25] Antes os métodos relacionados ao modelo matrículas estavam no controlador de pessoas, por uma qu estão de regra de negócio, mas para termos um apanhado melhor do que está acontecendo aqui no projeto, na aplicação, fiz essa separação.
+[00:19] Então vamos derrubar o servidor uma última vez para instalar uma biblioteca que é super útil, “uma mão na roda”, que se chama Nodemon. Instalarei essa biblioteca como dependência de desenvolvimento, porque ela não é usada na produção, só é usada na hora de desenvolvermos.
 
-[00:38] Vamos aproveitar já essa separação para dar uma olhada em um dos métodos que estão aqui dentro, que é o pegaMatriculasPorTurma, que é um método que criamos algumas aulas atrás, utilizando alguns agregadores, como limite, ordenação, e etc, e que o sequelize usa para montar a query.
+[00:37] E o Nodemon serve para ficar escutando automaticamente todas as alterações que fazemos nos arquivos na aplicação, e toda vez que salvarmos qualquer alteração, ele vai automaticamente derrubar e subir o servidor de novo, salvando esse trabalho, senão teremos uma dor de cabeça.
 
-[00:58] Como ficou no controlador? No método pegaMatriculasPorTurma eu substituí todos os updates, tudo que tinha aqui dentro por um método que chamei de encontraEContaRegistros, ficou meio trava-língua falando, foi o método que eu criei, e coloquei esse método no serviço js.
+[00:57] Vamos aproveitar já para fazer nosso Nodemon funcionar, adicionando no nosso pack de Json um script. Normalmente chamamos esse script de start.
 
-[01:22] O que esse método encontraEContaRegistros recebe? Dois parâmetros. O primeiro é o where, onde que ele vai encontrar as coisas, e o segundo passo os agregadores que usamos para montar essa query. Qual o método interno do sequelize que está sendo usado aqui? O método find and count all.
+[01:09] Quando rodamos o script start, ele passa para o terminal o comando Nodemon, que chamará a biblioteca e dá para ele aqui o entrypoint de aplicação para ele achar o servidor e rodar automaticamente. Vamos ver se está funcionando. npm run, rodar o comando start.
 
-[01:44] Se voltarmos na documentação do sequelize, o método find and count all recebe dois parâmetros. O primeiro parâmetro é um where, onde ele vai localizar os registros, e em seguida ele recebe todos os agregadores, as opções de paginação e todas as outras opções que podemos querer passar para refinar a nossa query, é exatamente da forma que está sendo passado no método que criei, primeiro está passando o where com o spread e em seguida faço um spread dos agregadores que estão sendo enviados através do método pegaMatriculasPorTurma.
+[01:32] Certo. Iniciou o Nodemon, que achou o API/index e colocou para rodar. Agora eu posso voltar em index.js, mudar, de repente, de novo, para 3.000, salvar o arquivo. E ele viu automaticamente, já fez alterações, essa parte está tranquila.
 
-[02:25] Na linha 69 estou passando o where e na segunda linha estou passando um objeto com cada um dos agregadores que estamos utilizando. O que sempre temos que conferir é se o método interno do sequelize, no caso o find and count all, está recebendo os parâmetros que ele precisa de acordo com a documentação, se você tiver alguma dúvida.
+[01:53] Eu Já criei também um arquivo chamado .gitignore. Você com certeza, ou bem provavelmente, vai querer subir o seu projeto para o GitHub. É bom não esquecer de incluir esse arquivo e já colocar dentro dele o arquivo .gitignore, o node_modules para não correr o risco. Da pasta de instalação node_modules, que é uma pasta local mesmo, não correr o risco dela subir para o GitHub. Servidor no ar, vamos fazer as últimas instalações. Por enquanto deixarei a janela do terminal rodando com nosso servidor.
 
-[02:45] A partir daí montamos o objeto e passamos como parâmetro desde o controlador, passamos como parâmetro do método que criamos dentro do controlador, passamos isso para o serviço.
+[02:29] Vamos abrir uma outra janela e continuar com as últimas instalações principais. Faltou instalar uma coisa muito importante, que é o banco que trabalharemos. Faltou justamente ele. Trabalharemos com o MySQL nesse projeto, então eu vou instalar: npm install mysql2.
 
-[03:00] Basicamente, o que o controlador está fazendo aqui é receber a requisição, ele recebe os parâmetros da requisição e corpo da requisição, o que tiver quando enviamos dados, faz uma atualização ou cria um registro novo, por exemplo, e passa tudo isso para o serviço de uma forma compreensível, entre aspas. Compreensível para o código.
+[02:52] Conversamos um pouco anteriormente que existem outros bancos do tipo banco SQL que você pode utilizar nesse projeto caso você não queira usar o MySQL, e eles são o Postgres, o mysql2, o mariadb, o sqlite3 e o Microsoft SQL Server. Se você quiser instalar qualquer um deles, ao invés de $ npm instal -- save mysql2”, o save não é mais necessário nas novas versões do npm. Você pode instalar pg-hstore, mariadb, sqlite3 ou o tedious, que é a ferramenta de gerenciamento do Microsoft SQL Server.
 
-[03:25] Com o método pegaTurmasLotadas, que é o outro método que criei dentro de matriculasController, está acontecendo exatamente a mesma coisa, inclusive ambos os métodos estão utilizando o mesmo serviço, que é o encontraEContaRegistros, só que passando em cada um deles informações diferentes, porém encontraEContaRegistros está recebendo o que ele espera receber, que é where e agregadores em seguida, e só montamos o objeto de forma que o método está esperando resolver.
+[03:29] Mas, se você preferir trabalhar aqui conosco com o SQL2, é só dar o mesmo comando que dei aqui: npm install mysql2.
 
-[03:56] Aproveitei, fui em services.js e lá no primeiro método, o mais básico do get, que é o getAll, que é o método pega todos os registros, aproveitei para incluir uma opção de where no findAll, porque o findAll anteriormente, quando criamos esse método lá no começo dessa aula era só um findAll sem receber parâmetro nenhum, só que isso daria alguns problemas, porque no caso do método pegaTodasAsTurmas, utilizaríamos esse findAll, que é o pegaTodosOsRegistros, e aqui estamos passando um where para ele.
+[03:37] Para finalizar as instalações faltou o próprio Sequelize, que é a ferramenta que usaremos, o ORM que usaremos aqui a principal para desenvolver a nossa API. npm instal sequelize, e pedirei para o npm instalar mais duas dependências: sequelize-cli e path. npm instal sequelize sequelize-cli path.
 
-[04:38] Então precisei fazer essa alteração para que o método findAll recebesse ou não parâmetros, por exemplo um where, se não receber nada ele dá só o findAll sem parâmetro nenhum, e se receber o where, ele trabalha com where.
+[04:03] Vejam que sequelize e sequelize-cli são dependências diferentes. O sequelize é usado para instalar e usar os métodos da ferramenta mesmo, e o sequelize-cli serve para usarmos alguns recursos de linha de comando que o sequelize tem. Tudo foi instalado nas dependências de desenvolvimento do Nodemon. E aqui as dependências normais, path, sequelize e sequelize-cli.
 
-[04:51] Como em qualquer outra aplicação, ainda tem muito refinamento que podemos fazer aqui nessa aplicação. Por exemplo, diversas outras validações de banco. Se o registro já existe, se estudante x já tem uma matrícula, etc, podemos fazer tudo isso, mas agora que já vimos uma quantidade muito boa de recursos do sequelize e quero frisar que ainda não vimos todos, tem bastante coisa que o sequelize é bastante completo, mas já vimos bastante coisa, já entendemos como faz para interpretar a documentação, e agora você pode implementar o que você precisa de acordo como seu projeto.
+[04:28] Esses recursos de linha de comando que o sequelize tem são para se conectar com o banco, para criação de modelos, criação de arquivos, etc. Então, se ele nada mais é do que o command line interface, que na prática é o nosso terminal, agora já podemos subir o Boiler Plate, um template padrão de início do projeto que o sequelize faz como projeto inicial, para termos um pontapé inicial no nosso projeto. Vamos fazer isso em seguida.
 
-[05:28] Já vimos também um pouco sobre como organizar uma aplicação, para que ela tenha uma manutenção mais fácil e melhor entendimento, e a partir do que vimos aqui você já pode evoluir e criar as suas APIs, suas aplicações, de acordo com o que o seu projeto precisa.
+[05:02] Durante o projeto, trabalharemos bastante com a ferramenta ORM. A documentação do sequelize aparece abaixo.
+
+[05:10] Vamos olhar agora algumas coisas que o sequelize pode nos fazer. Além de toda a comunicação com bancos, o sequelize também pode criar os arquivos de base. Conseguimos criar com ele um projeto vazio que serve como pontapé inicial para continuarmos nosso projeto. Vamos ver como isso funciona. Usaremos o npx sequelize-cli init. O npx é para rodar as dependências que estão instaladas localmente, uma vez que o sequelize e os outros programas instalados no projeto não foram instalados de forma global.
+
+[05:51] Vamos ver o que ele nos passou de mensagem. Ele passou que criou algumas coisas: config/config.json, um diretório models, um diretório migrações, diretórios de modo seeders.
+
+[06:04] Vamos, então, no nosso editor de código ver o que aconteceu. Criou essas quatro pastas. A pasta models e a pasta config já têm alguns arquivos dentro. Olharemos o que tem em seguida. Antes disso, vamos fazer o seguinte: criamos uma pasta API para colocar os arquivos, a nossa aplicação dentro. Só que como estamos rodando os comandos direto na raiz do nosso projeto, precisaremos passar os arquivos que o Sequelize criou na raiz para dentro da nossa pasta, para ficar tudo certo. Então as pastas criadas são essas, config, migrações, modelos e seeders.
+
+[06:48] Vamos passar as pastas config, migrações, modelos e seeders para dentro da pasta API, selecionando-as e arrastando-as para dentro da pasta API. E agora, como mudamos algumas coisas de lugar para ficar mais organizado, precisaremos avisar o Sequelize para ele não ficar perdido com relação a isso, porque qualquer outro comando que passemos para ele agora na raiz do projeto, ele não conseguirá encontrar os diretórios que jogamos dentro da pasta API. Criaremos um arquivo chamado .sequelizerc.
+
+[07:20] Esse arquivo, inclusive, está previsto na documentação do Sequelize. Tirando o babel que não precisaremos usar por enquanto, podemos criar esse arquivo .sequelizerc quando quisermos estruturar nossa aplicação, em, de repente, uma hierarquia de pastas um pouco diferente da padrão do Sequelize. E aí dentro, acho que podemos inclusive copiar esse trecho de código.
+
+const path = require('path');
+
+module.exports = {
+  'config': path.resolve('./api/config', 'config.json'),
+  'models-path': path.resolve('./api/models'),
+  'seeders-path': path.resolve('./api/seeders'),
+  'migrations-path': path.resolve('./api/migrations')
+}COPIAR CÓDIGO
+[07:55] Usaremos aquela biblioteca que instalamos lá atrás, o path, e exportarmos um módulo que resolverá, literalmente, para o Sequelize, os novos caminhos. Para ele conseguir encontrar config, conseguir encontrar models, seeders e tudo que ele criou.
+
+[08:16] Aqui dentro das linhas de código, temos que passar o caminho novo. Aqui dentro que vamos passar que, ao invés de estar em raiz models, com o comando ‘models-path’ : path.resolve(‘models’), ele está em /api/models, com o comando ‘models-path’ : path.resolve(‘./api/models’), . Isso será feito em todas as linhas de comando: config, seeders e migrações.
+
+[08:33] Estamos usando config.json. Se você, de repente, quiser utilizar config.js, ele também aceita, mas deixaremos como json aqui no nosso projeto. Agora já temos um projeto arrumado, um pontapé inicial, digamos assim, pronto para ser preenchido. Vamos nos conectar com o banco para poder começar a realmente testar de verdade a nossa API.
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+[00:00] Na pasta de arquivos que deixamos pronta para você, vai ter esse PDF aqui que é o diagrama relacional do banco que usaremos no nosso projeto da escola de inglês.
+
+[00:09] Essa parte de criar o banco, as tabelas, normalização de banco, nós não vamos entrar aqui porque não é nosso objetivo nesse momento, e sim do curso. Estamos focados em entender melhor como funciona o Sequelize, como trabalhar com ORM etc.
+
+[00:25] Se você tiver interesse em saber mais sobre criação de banco, relação de tabela, normalização de banco, deixaremos referenciados alguns cursos bem bacanas da Alura, mas, por enquanto, o precisamos com essa tabela é saber que ela será bastante usada, consultaremos bastante esse diagrama aqui para ver de forma criamos o banco, de que forma criamos tabelas e tudo mais, como relacionamos tabelas etc.
+
+[00:49] Nosso banco da escola não existe ainda, acessaremos o terminal para entrar no terminal do MySQL e criar um novo banco de dados local com o nome “escola de inglês”. A primeira coisa é entrar no terminal do MySQL. Estou entrando com o usuário root mesmo porque é um banco local de desenvolvimento. Se você, quando instalou e configurou o MySQL, tiver definido uma senha, você vai ter que inserir essa senha.
+
+[01:21] Estou agora no terminal, entrei no MySQL. Por enquanto, não estou conectada em nenhuma database específica, que já exista. Mas podemos dar o comando show databases, mostrar databases, mysql> show databases;. Esse comando é do MySQL. Sempre terminar os comandos com ponto e vírgula, isso é importante, não pode esquecer.
+
+[01:41] Por enquanto, meu banco está vazio, os dados que aparecem são só os arquivos que o MySQL cria por padrão, não temos nenhum banco criado. Lembrando também que se você estiver usando outro banco de dados, como o post, ou o sqlite, o comando show databases é do mySQL. Pode ser que em outro banco, o comando para mostrar todas as databases seja diferente. Lembrando que estamos falando do dialeto MySQL.
+
+[02:14] Vamos criar a database que usaremos no nosso projeto. Chamaremos esse banco de escola de inglês mesmo. O comando é criar database, mysql> create database escola_ingles;. Query ok, se voltarmos com o comando de mostrar database, escola de inglês foi criado.
+
+[02:43] As tabelas serão criadas direto pelo Sequelize. Não precisamos fazer isso pelo terminal, nem direto pelo SQL. Então, o que temos que fazer agora é avisar a nossa aplicação que existe um banco SQL que já foi criado, e que temos que nos conectar com ele. Anteriormente, criamos um projeto vazio, API, entre muitas aspas, com quatro pastas (config, migrations, models, seeders). Em uma dessas pastas, o arquivo config já veio preenchido pelo Sequelize.
+
+{ "development": { "username": "root", "password": null, "database": "database_development", "host": "127.0.0.1", "dialect": "mysql", "operatorsAliases": false },
+
+[03:20] Nesse arquivo config, já tem a base para preenchermos com os dados do nosso banco. Por enquanto, só usaremos o banco local de desenvolvimento, não precisamos nos preocupar com produção, nem com teste. Agora substituiremos os dados presentes pelos dados do nosso banco, que se chama “escola de inglês”. Não coloquei senha no meu usuário root, se você tiver colocado, precisa inseri-la por extenso mesmo, em uma string. O host é o local mesmo, o dialeto é o MySQL, e podemos deixar o operatorsAliases como falso mesmo, por exemplo.
+
+[04:04] As linhas de código do test não precisamos preencher porque não vamos trabalhar, só trabalharemos com desenvolvimento por enquanto. O outro arquivo que o Sequelize criou quando demos o comando sequelize-cli init, e já tem código nele, é o arquivo index.js, que está dentro da pasta modelo. Não é o index.js, que criamos para subir o servidor.
+
+use strict';
+
+const fs = require('fs');
+const path = require('path');
+const Sequelize = require('sequelize');
+const basename = path.basename(__filename);
+const env = process.env.NODE_ENV || 'development';
+const config = require(__dirname + '/../config/config.json')[env];
+const db = {};
+
+let sequelize;
+if (config.use_env_variable) {
+  sequelize = new Sequelize(process.env[config.use_env_variable], config);
+} else {
+  sequelize = new Sequelize(config.database, config.username, config.password, config);
+}COPIAR CÓDIGO
+[04:29] Esse arquivo vai gerenciar todos os modelos do banco. Por enquanto, não temos modelo nenhum, começaremos a criá-los em seguida, de acordo com nossas tabelas. Por enquanto não temos modelos, mas quando criarmos, eles entrarão na pasta index.js e o trabalho que esse arquivo index, que já veio pronto, vai fazer, é gerenciar esses modelos.
+
+[04:54] Podemos dizer aqui que o código funciona de forma transparente, não precisamos nos ater muito a ele e ficar muito preocupados exatamente com que cada linha desse código faz. Basicamente, esse código está importando algumas coisas, inclusive o Sequelize, está checando o ambiente que estamos. Por enquanto, estamos no ambiente de desenvolvimento. Na pasta config.json teremos o teste, produção etc.
+
+[05:22] Na pasta index.js, está sendo checado o ambiente que fazemos; por enquanto, de desenvolvimento, pegando essas configurações, que estão no arquivo config.json, e essas informações são utilizadas para criar uma nova instância de Sequelize. A partir disso, o Sequelize, usando o file system, percorrerá todos os modelos que criarmos e que estarão dentro da pasta index.js. E aí fazer as associações, conectar ao banco etc.
+
+[05:53] Como já vimos, o código já veio pronto para fazer a função. Essa é uma das coisas boas de usarmos, por exemplo, um Boiler Plate, que já vem com algumas coisas prontas para utilizarmos e não precisarmos nos preocupar muito com cada parte do código.
+
+[06:10] Caso queiramos mandar depois esse projeto em produção no futuro, ele também já está pronto e vai checar automaticamente as configurações que estamos usando. E aí conseguimos usar variável de ambiente, por exemplo, para mandar para produção etc.
+
+[06:30] Hora de criarmos os modelos baseados nas nossas tabelas. Geraremos essas tabelas do banco e conectar tudo através do que acabamos de inserir no arquivo config. E aí, o Sequelize fará essa conversa direto com o MySQL.
